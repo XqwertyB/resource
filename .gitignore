@@ -2,4 +2,4 @@ env/
 venv/
 .idea/
 static/
-Career_centr/.env
+.env
