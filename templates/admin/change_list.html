@@ -1,0 +1,9 @@
+{% extends "admin/change_list.html" %}
+
+{% block object-tools %}
+<div class="object-tools">
+    <ul class="nav-item">
+        <li><a href="{% url 'admin:load-data' %}" class="button">Load Data from API</a></li>
+    </ul>
+</div>
+{% endblock %}
