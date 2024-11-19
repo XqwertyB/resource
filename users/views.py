@@ -211,13 +211,22 @@ class oAuthCallbackView(APIView):
         # Generate JWT token
         refresh = RefreshToken.for_user(user)
         return Response({
-            'details': user_details,
             'jwt_token': {
                 'refresh': str(refresh),
                 'access': str(refresh.access_token),
             }
         }, status=status.HTTP_200_OK)
 
+    def convert_birth_date(self, birth_date_str):
+        if birth_date_str:
+            try:
+                # Ensure the date format is parsed properly
+                date_obj = datetime.strptime(birth_date_str, '%Y-%m-%d')  # Adjust format as needed
+                return date_obj  # Return the actual datetime object
+            except ValueError:
+                logger.error(f"Invalid birth date format: {birth_date_str}")
+                return None
+        return None
 
 class LoginView(TokenObtainPairView):
     serializer_class = LoginSerializer

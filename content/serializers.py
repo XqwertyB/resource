@@ -49,6 +49,18 @@ class RecSerializers(serializers.ModelSerializer):
         fields = ['id', 'sub_category', 'file', 'video', 'typ', 'info', 'user', ]
 
 
+class ReviewRecourseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ReviewRecourse
+        fields = ['id', 'rating', 'comment', 'user']
+
+class ResSerializers(serializers.ModelSerializer):
+    reviews = ReviewRecourseSerializer(many=True, read_only=True, source='reviewrecourse_set')
+    class Meta:
+        model = models.Recourse
+        fields = ['id', 'category', 'files', 'videos', 'typ', 'info', 'reviews']
+
+
 class LoginSerializer(serializers.Serializer):
     login = serializers.CharField()
     password = serializers.CharField(write_only=True, required=True)
@@ -62,12 +74,11 @@ class LoginSerializer(serializers.Serializer):
         if not password:
             raise ValidationError("Password is required.")
 
-        # Attempt authentication with Django’s built-in authenticate method
         authentication_kwargs = {'username': login, 'password': password}
         user = authenticate(**authentication_kwargs)
 
         if user:
-            # If user is found, attach to serializer and return success with role
+
             self.user = user
             return {
                 "message": "Login successful.",
@@ -75,10 +86,10 @@ class LoginSerializer(serializers.Serializer):
                 "role": self.user.role.lower()
             }
         else:
-            # Handle student ID-based authentication through external service
+
             token = self.verify_student_password(login, password)
             if token:
-                # Create JWT tokens for the student and return them
+
                 jwt_tokens = self.create_jwt_token(login)
                 return {
                     "message": "Login successful.",

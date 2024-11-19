@@ -1,6 +1,6 @@
 from django.urls import path
 
-from content.views import RecCreateView, RecView, RecUpDe,  ReviewRecourseAPIView
+from content.views import RecCreateView, RecView, RecUpDe, ReviewRecourseAPIView, RecUserContent
 from users.views import (get_and_save_all_pages, DataImportView,
                          oAuthAuthorizationView, oAuthCallbackView, LoginView, \
                          )
@@ -11,6 +11,7 @@ urlpatterns = [
     path('login/', oAuthAuthorizationView.as_view()),
     path('login/student/', LoginView.as_view()),
     path('callback/', oAuthCallbackView.as_view()),
+    path('resourceuser/', RecUserContent.as_view() ),
     path('recourse-create/', RecCreateView.as_view()),
     path('recourse/', RecView.as_view()),
     path('recourse_up_del/<str:pk>/', RecUpDe.as_view()),

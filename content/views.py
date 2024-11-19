@@ -1,13 +1,18 @@
+from uuid import UUID
+
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, status
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST
 from rest_framework.views import APIView
+from yaml import serialize
+
 from users.permission import IsTeacher, IsStudent
 from . import models
 from .models import Recourse, RecViews, ReviewRecourse
-from .serializers import RecSerializers, ReviewRecourseSerializer
+from .serializers import RecSerializers, ReviewRecourseSerializer, ResSerializers
 
 
 class RecCreateView(APIView):
@@ -15,7 +20,7 @@ class RecCreateView(APIView):
     def post(self, request):
         user = request.user
 
-        data = request.data.copy()  # Делаем копию данных запроса
+        data = request.data.copy()
         data['user'] = user.id
 
 
@@ -26,7 +31,7 @@ class RecCreateView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class RecView(APIView):
-    #permission_classes = [IsTeacher, IsStudent,]
+    permission_classes = [IsTeacher, IsStudent,]
     def get(self, request, *args, **kwargs):
         sub_category_name = request.query_params.get('sub_category')
         typ = request.query_params.get('typ')
@@ -46,27 +51,27 @@ class RecUpDe(generics.RetrieveUpdateDestroyAPIView):
 
 class RecDetail(APIView):
     def get(self, request, pk, ):
-        # Получаем объект вакансии по его ID
+
         rec = get_object_or_404(Recourse, pk=pk)
 
-        # Получаем текущего пользователя
+
         user = request.user
 
-        # Проверяем, просматривал ли пользователь эту вакансию ранее
+
         rec_viewed = RecViews.objects.filter(user=user, rec=rec).exists()
 
         if not rec_viewed:
-            # Увеличиваем количество просмотров на 1
+
             rec.view_count += 1
             rec.save()
 
             # Записываем, что пользователь просмотрел вакансию
             RecViews.objects.create(user=user, rec=rec)
 
-        # Сериализуем объект для отображения
+
         serializer = RecSerializers(rec)
 
-        # Возвращаем ответ с данными вакансии
+
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -98,4 +103,28 @@ class ReviewRecourseAPIView(APIView):
 
         review.delete()
         return Response({"message": "Review deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+
+
+class RecUserContent(APIView):
+    permission_classes = [IsTeacher,]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        try:
+            UUID(str(user.id))  # Validate UUID
+        except (ValueError, AttributeError):
+            return Response({"detail": "Invalid user ID format."}, status=400)
+
+        obj = Recourse.objects.filter(user=user)
+        serializes = RecSerializers(obj, many=True)
+        recourse_ids = obj.values_list('id', flat=True)
+        reviews = ReviewRecourse.objects.filter(recourse_id__in=recourse_ids)
+        review_serializer = ReviewRecourseSerializer(reviews, many=True)
+
+
+        response_data = {
+            "recourses": serializes.data,
+            "reviews": review_serializer.data
+        }
+        return Response(response_data, status=status.HTTP_200_OK)
 
