@@ -1,5 +1,3 @@
-from tkinter.font import names
-
 import requests
 from django.contrib.auth import authenticate
 from django.contrib.auth.hashers import make_password
