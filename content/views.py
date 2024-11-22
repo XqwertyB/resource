@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 from rest_framework import generics, status
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
@@ -11,7 +11,7 @@ from yaml import serialize
 
 from users.permission import IsTeacher, IsStudent
 from . import models
-from .models import Recourse, RecViews, ReviewRecourse
+from .models import Recourse, RecViews, ReviewRecourse, Likes
 from .serializers import RecSerializers, ReviewRecourseSerializer, ResSerializers
 
 
@@ -128,3 +128,37 @@ class RecUserContent(APIView):
         }
         return Response(response_data, status=status.HTTP_200_OK)
 
+def get_client_ip(request):
+    x_forwarded_for =request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip or "0.0.0.0"
+
+
+class AddLike(APIView):
+    def get(self, request, pk):
+        ip_client = get_client_ip(request)
+        if not ip_client:
+            return Response({"error": "Unable to fetch client IP"}, status=400)
+
+        try:
+            Likes.objects.get(ip=ip_client, resource_id=pk)
+            return redirect(f'/{pk}')
+        except Likes.DoesNotExist:
+            new_like = Likes()
+            new_like.ip = ip_client
+            new_like.resource_id = pk
+            new_like.save()
+            return redirect(f'/{pk}')
+
+class DelLike(APIView):
+    def get(self, request, pk):
+        ip_client = get_client_ip(request)
+        try:
+            lik = Likes.objects.get(ip=ip_client)
+            lik.delete()
+            return redirect(f'/{pk}')
+        except:
+            return redirect(f'/{pk}')

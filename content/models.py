@@ -99,3 +99,7 @@ class ReviewRecourse(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)  
     def __str__(self):
         return f"Review for {self.recourse} by {self.user.username} - Rating: {self.rating}"
+
+class Likes(models.Model):
+    ip = models.CharField('IP', max_length=100)
+    resource = models.ForeignKey(Recourse, on_delete=models.CASCADE)
