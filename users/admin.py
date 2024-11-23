@@ -9,7 +9,7 @@ from django.urls import path
 from django.template.response import TemplateResponse
 
 from .models import APISettings, User
-from .views import get_and_save_all_pages
+
 
 
 class UserAdmin(BaseUserAdmin):
