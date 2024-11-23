@@ -1,8 +1,7 @@
 from django.urls import path
 
 from content.views import RecCreateView, RecView, RecUpDe, ReviewRecourseAPIView, RecUserContent, AddLike, DelLike
-from users.views import ( DataImportView,
-                         oAuthAuthorizationView, OAuthCallbackView, LoginView, \
+from users.views import ( DataImportView, oAuthAuthorizationView, OAuthCallbackView, LoginView, \
                          )
 
 urlpatterns = [
