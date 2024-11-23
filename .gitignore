@@ -3,3 +3,4 @@ venv/
 .idea/
 static/
 .env
+db.sqlite3
