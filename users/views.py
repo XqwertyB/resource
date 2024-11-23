@@ -138,9 +138,9 @@ class OAuthCallbackView(APIView):
             client_id=CLIENT_ID,
             client_secret=CLIENT_SECRET,
             redirect_uri=REDIRECT_URI,
-            authorize_url=AUTHORIZE_URL,
-            token_url=TOKEN_URL,
-            resource_owner_url=RESOURCE_OWNER_URL
+            authorize_url='https://hemis.tsue.uz/oauth/authorize',
+            token_url='https://hemis.tsue.uz/oauth/access-token',
+            resource_owner_url='https://hemis.tsue.uz/oauth/api/user?fields='
         )
         access_token_response = client.get_access_token(auth_code)
 
