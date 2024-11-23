@@ -14,7 +14,8 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from config.settings import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI, AUTHORIZE_URL, TOKEN_URL, RESOURCE_OWNER_URL
+from config.settings import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI, AUTHORIZE_URL, TOKEN_URL, RESOURCE_OWNER_URL, \
+    REDIRECT_URIS, AUTHORIZE_URLS, TOKEN_URLS, RESOURCE_OWNER_URLS
 from content.serializers import LoginSerializer
 from users.client import oAuth2Client
 from users.models import User, APISettings
@@ -122,8 +123,6 @@ class oAuthAuthorizationView(APIView):
         }
 
 
-
-
 class OAuthCallbackView(APIView):
     def get(self, request, *args, **kwargs):
         full_info = {}
@@ -162,12 +161,9 @@ class OAuthCallbackView(APIView):
             )
 
 
-
-
-
 # class oAuthCallbackView(APIView):
 #     def get(self, request, *args, **kwargs):
-#         auth_code = self.kwargs.get('code')
+#         auth_code = request.GET.get('code')
 #         if not auth_code:
 #             return Response({'error': 'Authorization code is missing'}, status=status.HTTP_400_BAD_REQUEST)
 #
