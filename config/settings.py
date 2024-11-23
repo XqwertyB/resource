@@ -203,14 +203,11 @@ USE_TZ = True
 
 CLIENT_SECRET = 'AfAbslKI3hYG_BD2e0nTzUAjRmxhUtxijNF3XQ1J'
 CLIENT_ID ='4'
-REDIRECT_URI = 'http://127.0.0.1:8000/api/v1/callback/'
-REDIRECT_URIS = 'http://127.0.0.1:8000/api/v1/callback_student/'
+REDIRECT_URI = 'http://localhost:3000/login'
 AUTHORIZE_URL = 'https://hemis.tsue.uz/oauth/authorize',
-AUTHORIZE_URLS = 'https://talaba.tsue.uz/oauth/authorize',
 TOKEN_URL = 'https://hemis.tsue.uz/oauth/access-token',
-TOKEN_URLS = 'https://talaba.tsue.uz/oauth/access-token',
 RESOURCE_OWNER_URL = 'https://hemis.tsue.uz/oauth/api/user?fields='
-RESOURCE_OWNER_URLS = 'https://talaba.tsue.uz/oauth/api/user?fields='
+
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')

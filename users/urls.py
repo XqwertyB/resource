@@ -2,14 +2,14 @@ from django.urls import path
 
 from content.views import RecCreateView, RecView, RecUpDe, ReviewRecourseAPIView, RecUserContent, AddLike, DelLike
 from users.views import ( DataImportView,
-                         oAuthAuthorizationView, oAuthCallbackView, LoginView, \
+                         oAuthAuthorizationView, OAuthCallbackView, LoginView, \
                          )
 
 urlpatterns = [
     path('save_teacher/', DataImportView.as_view(), name="O'qtuvchilarni yuklab olish"),
     path('login/', oAuthAuthorizationView.as_view(), name="Login o'qtuvchilar uchun"),
     path('login/student/', LoginView.as_view(), name='login talabalar uchun'),
-    path('callback/', oAuthCallbackView.as_view()),
+    path('callback/', OAuthCallbackView.as_view()),
     path('resourceuser/', RecUserContent.as_view(), name="Userga tegishli resurslar" ),
     path('recourse-create/', RecCreateView.as_view(), name="resurs yaratish"),
     path('recourse/', RecView.as_view(), name="barcha resurslar"),
