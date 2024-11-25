@@ -1,6 +1,7 @@
 from django.urls import path
 
-from content.views import RecCreateView, RecView, RecUpDe, ReviewRecourseAPIView, RecUserContent, AddLike, DelLike
+from content.views import RecCreateView, RecView, RecUpDe, ReviewRecourseAPIView, RecUserContent, AddLike, DelLike, \
+    RecDetail
 from users.views import (DataImportView, oAuthAuthorizationView, OAuthCallbackView, LoginView, UserDetailView, \
                          )
 
@@ -12,9 +13,10 @@ urlpatterns = [
     path('resourceuser/', RecUserContent.as_view(), name="Userga tegishli resurslar" ),
     path('recourse-create/', RecCreateView.as_view(), name="resurs yaratish"),
     path('recourse/', RecView.as_view(), name="barcha resurslar"),
+    path('recourse/detail/<str:pk>/', RecDetail.as_view()),
     path('recourse_up_del/<str:pk>/', RecUpDe.as_view(), name="resursni update qilish yoki uchirish"),
-    path('recourse/<int:recourse_id>/reviews/', ReviewRecourseAPIView.as_view(), name='recourse-reviews'),
-    path('reviews/<int:pk>/', ReviewRecourseAPIView.as_view(), name='review-detail'),
+    path('recourse/<str:recourse_id>/reviews/', ReviewRecourseAPIView.as_view(), name='recourse-reviews'),
+    path('reviews/<str:pk>/', ReviewRecourseAPIView.as_view(), name='review-detail'),
     path('<str:pk>/add_likes', AddLike.as_view(), name='Like quyish'),
     path('<str:pk>/del_likes', DelLike.as_view(), name= 'Likeni uchirish'),
     path('getme/', UserDetailView.as_view()),

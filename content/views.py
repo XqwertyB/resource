@@ -1,6 +1,8 @@
 from uuid import UUID
 
 from django.shortcuts import get_object_or_404, redirect
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
@@ -17,6 +19,7 @@ from .serializers import RecSerializers, ReviewRecourseSerializer, ResSerializer
 
 class RecCreateView(APIView):
     permission_classes = [IsTeacher,]
+    @swagger_auto_schema(request_body=RecSerializers)
     def post(self, request):
         user = request.user
 
@@ -32,6 +35,7 @@ class RecCreateView(APIView):
 
 class RecView(APIView):
     permission_classes = [IsTeacher, IsStudent,]
+    #@swagger_auto_schema(request_body=RecSerializers)
     def get(self, request, *args, **kwargs):
         sub_category_name = request.query_params.get('sub_category')
         typ = request.query_params.get('typ')
@@ -50,6 +54,17 @@ class RecUpDe(generics.RetrieveUpdateDestroyAPIView):
 
 
 class RecDetail(APIView):
+    @swagger_auto_schema(
+        # For GET requests, use query parameters
+        manual_parameters=[
+            openapi.Parameter(
+                'param_name',
+                openapi.IN_QUERY,
+                description="Description of the query parameter",
+                type=openapi.TYPE_STRING,
+            ),
+        ]
+    )
     def get(self, request, pk, ):
 
         rec = get_object_or_404(Recourse, pk=pk)
@@ -78,13 +93,24 @@ class RecDetail(APIView):
 class ReviewRecourseAPIView(APIView):
     permission_classes = [IsAuthenticated,]
 
+    @swagger_auto_schema(
+        # For GET requests, use query parameters
+        manual_parameters=[
+            openapi.Parameter(
+                'param_name',
+                openapi.IN_QUERY,
+                description="Description of the query parameter",
+                type=openapi.TYPE_STRING,
+            ),
+        ]
+    )
 
     def get(self, request, recourse_id):
         reviews = ReviewRecourse.objects.filter(recourse_id=recourse_id)
         serializer = ReviewRecourseSerializer(reviews, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-
+    @swagger_auto_schema(request_body=ReviewRecourseSerializer)
     def post(self, request, recourse_id):
         data = request.data.copy()
         data['recourse'] = recourse_id
@@ -107,7 +133,7 @@ class ReviewRecourseAPIView(APIView):
 
 class RecUserContent(APIView):
     permission_classes = [IsTeacher,]
-
+    #@swagger_auto_schema(request_body=ReviewRecourseSerializer)
     def get(self, request, *args, **kwargs):
         user = request.user
         try:

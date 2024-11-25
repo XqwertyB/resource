@@ -8,6 +8,7 @@ from django.http import JsonResponse
 from django.shortcuts import render, redirect
 from django.urls import reverse
 from django.views import View
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -249,6 +250,8 @@ class OAuthCallbackView(APIView):
 class UserDetailView(APIView):
     permission_classes = (IsAuthenticated,)
     serializer_class = GetUserSerializer
+    #@swagger_auto_schema(request_body=GetUserSerializer)
+
 
     def get(self, request, *args, **kwargs):
         user = request.user
