@@ -122,51 +122,18 @@ class oAuthAuthorizationView(APIView):
         }
 
 
-class OAuthCallbackView(APIView):
-    def get(self, request, *args, **kwargs):
-        full_info = {}
-        auth_code = self.kwargs.get('code')
-        if not auth_code:
-            return Response(
-                {
-                    'status': False,
-                    'error': 'Authorization code is missing'
-                },
-                status=status.HTTP_400_BAD_REQUEST)
-
-        client = oAuth2Client(
-            client_id=CLIENT_ID,
-            client_secret=CLIENT_SECRET,
-            redirect_uri=REDIRECT_URI,
-            authorize_url='https://hemis.tsue.uz/oauth/authorize',
-            token_url='https://hemis.tsue.uz/oauth/access-token',
-            resource_owner_url='https://hemis.tsue.uz/oauth/api/user?fields='
-        )
-        access_token_response = client.get_access_token(auth_code)
-
-        if 'access_token' in access_token_response:
-            access_token = access_token_response['access_token']
-            user_details = client.get_user_details(access_token)
-            full_info['details'] = user_details
-            full_info['token'] = access_token
-            return Response(full_info, status=status.HTTP_200_OK)
-        else:
-            return Response(
-                {
-                    'status': False,
-                    'error': 'Failed to obtain access token'
-                },
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-
-# class oAuthCallbackView(APIView):
+# class OAuthCallbackView(APIView):
 #     def get(self, request, *args, **kwargs):
-#         auth_code = request.GET.get('code')
+#         full_info = {}
+#         auth_code = self.kwargs.get('code')
 #         if not auth_code:
-#             return Response({'error': 'Authorization code is missing'}, status=status.HTTP_400_BAD_REQUEST)
+#             return Response(
+#                 {
+#                     'status': False,
+#                     'error': 'Authorization code is missing'
+#                 },
+#                 status=status.HTTP_400_BAD_REQUEST)
 #
-#         # Initialize OAuth client with parameters from settings
 #         client = oAuth2Client(
 #             client_id=CLIENT_ID,
 #             client_secret=CLIENT_SECRET,
@@ -175,93 +142,109 @@ class OAuthCallbackView(APIView):
 #             token_url='https://hemis.tsue.uz/oauth/access-token',
 #             resource_owner_url='https://hemis.tsue.uz/oauth/api/user?fields='
 #         )
+#         access_token_response = client.get_access_token(auth_code)
 #
-#         # Attempt to get access_token
-#         try:
-#             access_token_response = client.get_access_token(auth_code)
-#         except Exception as e:
-#             logger.error("Error obtaining access token: %s", e)
-#             return Response({'error': 'An error occurred while obtaining the access token'},
-#                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-#
-#         if 'access_token' not in access_token_response:
+#         if 'access_token' in access_token_response:
+#             access_token = access_token_response['access_token']
+#             user_details = client.get_user_details(access_token)
+#             full_info['details'] = user_details
+#             full_info['token'] = access_token
+#             return Response(full_info, status=status.HTTP_200_OK)
+#         else:
 #             return Response(
-#                 {'status': False, 'error': 'Failed to obtain access token'},
+#                 {
+#                     'status': False,
+#                     'error': 'Failed to obtain access token'
+#                 },
 #                 status=status.HTTP_400_BAD_REQUEST
 #             )
-#
-#         access_token = access_token_response['access_token']
-#
-#         # Attempt to get user details
-#         try:
-#             user_details = client.get_user_details(access_token)
-#             logger.info("User details: %s", user_details)
-#         except Exception as e:
-#             logger.error("Error fetching user details: %s", e)
-#             return Response({'error': 'Failed to fetch user details'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-#
-#         departments = user_details.get('departments', [])
-#         if departments:
-#            # print(departments)  # Debugging to ensure the structure
-#             department_data = departments[0].get('department', {})
-#             department_name = department_data.get('name', None)
-#         else:
-#             department_name = None
-#             print("Departments field is empty or missing.")
-#
-#         transformed_data = {
-#             'first_name': user_details.get('firstname'),
-#             'second_name': user_details.get('surname'),
-#             'birth_date': self.convert_birth_date(user_details.get('birth_date')),
-#             'phone_number': user_details.get('phone').replace('+', ''),
-#             'role': 'teacher',  # Default role
-#             'employee_id_number': user_details.get('employee_id_number'),
-#             'department': department_name
-#         }
-#
-#         # Check if a user with the given phone_number already exists
-#         phone_number = transformed_data['phone_number']
-#         user = User.objects.filter(phone_number=phone_number).first()
-#
-#         if user:
-#             # User exists, update the user
-#             user.first_name = transformed_data.get('first_name', user.first_name)
-#             user.second_name = transformed_data.get('second_name', user.second_name)
-#             user.birth_date = transformed_data.get('birth_date', user.birth_date)
-#             user.phone_number = transformed_data.get('phone_number', user.phone_number)
-#             user.employee_id_number = transformed_data.get('employee_id_number', user.employee_id_number)
-#             user.department = transformed_data.get('department', user.department)
-#             user.role = transformed_data.get('role', user.role)
-#             user.save()
-#             logger.info("User updated: %s", user)
-#         else:
-#             # User does not exist, create a new one
-#             try:
-#                 user = User.objects.create(**transformed_data)
-#                 logger.info("User created: %s", user)
-#             except IntegrityError as e:
-#                 logger.error("Error creating user: %s", e)
-#                 return Response({'error': 'User creation failed due to integrity error.'}, status=status.HTTP_400_BAD_REQUEST)
-#
-#         # Generate JWT token
-#         refresh = RefreshToken.for_user(user)
-#         return Response({
-#             'jwt_token': {
-#                 'refresh': str(refresh),
-#                 'access': str(refresh.access_token),
-#             }
-#         }, status=status.HTTP_200_OK)
-#
-#     def convert_birth_date(self, birth_date_str):
-#         if birth_date_str:
-#             try:
-#                 # Ensure the date format is parsed properly
-#                 date_obj = datetime.strptime(birth_date_str, '%Y-%m-%d')  # Adjust format as needed
-#                 return date_obj  # Return the actual datetime object
-#             except ValueError:
-#                 logger.error(f"Invalid birth date format: {birth_date_str}")
-#                 return None
-#         return None
+
+
+class OAuthCallbackView(APIView):
+    def get(self, request, *args, **kwargs):
+        auth_code = self.kwargs.get('code')
+        if not auth_code:
+            return Response({'error': 'Authorization code is missing'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # OAuth client initialization
+        client = oAuth2Client(
+            client_id=CLIENT_ID,
+            client_secret=CLIENT_SECRET,
+            redirect_uri=REDIRECT_URI,
+            authorize_url='https://hemis.tsue.uz/oauth/authorize',
+            token_url='https://hemis.tsue.uz/oauth/access-token',
+            resource_owner_url='https://hemis.tsue.uz/oauth/api/user?fields='
+        )
+
+        try:
+            access_token_response = client.get_access_token(auth_code)
+        except Exception as e:
+            logger.error("Error obtaining access token: %s", e)
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        access_token = access_token_response.get('access_token')
+        if not access_token:
+            return Response({'error': 'Failed to obtain access token'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user_details = client.get_user_details(access_token)
+            logger.debug("User details: %s", user_details)
+        except Exception as e:
+            logger.error("Error fetching user details: %s", e)
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        # Department handling
+        departments = user_details.get('departments', [])
+        department_name = departments[0].get('department', {}).get('name') if departments else None
+
+        # Transform data
+        transformed_data = {
+            'first_name': user_details.get('firstname'),
+            'second_name': user_details.get('surname'),
+            'birth_date': self.convert_birth_date(user_details.get('birth_date')),
+            'phone_number': user_details.get('phone').replace('+', ''),
+            'role': 'teacher',
+            'employee_id_number': user_details.get('employee_id_number'),
+            'department': department_name,
+        }
+
+        logger.debug("Transformed data: %s", transformed_data)
+
+        # Handle user creation or update
+        phone_number = transformed_data['phone_number']
+        user = User.objects.filter(phone_number=phone_number).first()
+
+        try:
+            if user:
+                logger.info("Updating user: %s", user)
+                for key, value in transformed_data.items():
+                    setattr(user, key, value)
+                user.save()
+            else:
+                logger.info("Creating new user with data: %s", transformed_data)
+                user = User.objects.create(**transformed_data)
+
+
+            refresh = RefreshToken.for_user(user)
+            return Response({
+                'details': user_details,
+                'jwt_token': {
+                    'refresh': str(refresh),
+                    'access': str(refresh.access_token),
+                }
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            logger.error("Error processing user: %s", e)
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    def convert_birth_date(self, birth_date_str):
+        try:
+            return datetime.strptime(birth_date_str, '%d-%m-%Y')
+        except Exception as e:
+            logger.error(f"Invalid birth date: {birth_date_str}. Error: {e}")
+            return None
+
 
 class LoginView(TokenObtainPairView):
     serializer_class = LoginSerializer
