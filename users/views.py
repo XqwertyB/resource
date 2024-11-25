@@ -9,6 +9,7 @@ from django.shortcuts import render, redirect
 from django.urls import reverse
 from django.views import View
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -19,7 +20,7 @@ from content.serializers import LoginSerializer
 from users.client import oAuth2Client
 from users.models import User, APISettings
 from config import settings
-
+from users.serializers import GetUserSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -244,6 +245,23 @@ class OAuthCallbackView(APIView):
         except Exception as e:
             logger.error(f"Invalid birth date: {birth_date_str}. Error: {e}")
             return None
+
+class UserDetailView(APIView):
+    permission_classes = (IsAuthenticated,)
+    serializer_class = GetUserSerializer
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+
+        # Сериализуем данные пользователя
+        serializer = self.serializer_class(user)
+
+        return Response(
+            {
+                "data": serializer.data
+            },
+            status=status.HTTP_200_OK
+        )
 
 
 class LoginView(TokenObtainPairView):
