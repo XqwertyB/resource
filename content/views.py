@@ -14,12 +14,13 @@ from yaml import serialize
 from users.permission import IsTeacher, IsStudent
 from . import models
 from .models import Recourse, RecViews, ReviewRecourse, Likes
-from .serializers import RecSerializers, ReviewRecourseSerializer, ResSerializers
+from .serializers import RecSerializer, ReviewRecourseSerializer, ResViewSerializers, Category
 
 
 class RecCreateView(APIView):
     permission_classes = [IsTeacher,]
-    @swagger_auto_schema(request_body=RecSerializers)
+
+    @swagger_auto_schema(request_body=RecSerializer)
     def post(self, request):
         user = request.user
 
@@ -27,7 +28,7 @@ class RecCreateView(APIView):
         data['user'] = user.id
 
 
-        serializer = RecSerializers(data=data)
+        serializer = RecSerializer(data=data, context={'req_user': request.user.id})
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -35,7 +36,18 @@ class RecCreateView(APIView):
 
 class RecView(APIView):
     permission_classes = [IsTeacher, IsStudent,]
-    #@swagger_auto_schema(request_body=RecSerializers)
+
+    @swagger_auto_schema(
+        # For GET requests, use query parameters
+        manual_parameters=[
+            openapi.Parameter(
+                'param_name',
+                openapi.IN_QUERY,
+                description="Description of the query parameter",
+                type=openapi.TYPE_STRING,
+            ),
+        ]
+    )
     def get(self, request, *args, **kwargs):
         sub_category_name = request.query_params.get('sub_category')
         typ = request.query_params.get('typ')
@@ -44,12 +56,12 @@ class RecView(APIView):
             queryset = queryset.filter(sub_category__name__iexact=sub_category_name)
         if typ:
             queryset=queryset.filter(typ=typ)
-        serializer = RecSerializers(queryset, many=True)
+        serializer = ResViewSerializers(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 class RecUpDe(generics.RetrieveUpdateDestroyAPIView):
     queryset = models.Recourse.objects.all()
-    serializer_class = RecSerializers
+    serializer_class = RecSerializer
     permission_classes = [IsTeacher,]
 
 
@@ -84,7 +96,7 @@ class RecDetail(APIView):
             RecViews.objects.create(user=user, rec=rec)
 
 
-        serializer = RecSerializers(rec)
+        serializer = ResViewSerializers(rec)
 
 
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -142,7 +154,7 @@ class RecUserContent(APIView):
             return Response({"detail": "Invalid user ID format."}, status=400)
 
         obj = Recourse.objects.filter(user=user)
-        serializes = RecSerializers(obj, many=True)
+        serializes = ResViewSerializers(obj, many=True)
         recourse_ids = obj.values_list('id', flat=True)
         reviews = ReviewRecourse.objects.filter(recourse_id__in=recourse_ids)
         review_serializer = ReviewRecourseSerializer(reviews, many=True)
@@ -188,3 +200,22 @@ class DelLike(APIView):
             return redirect(f'/{pk}')
         except:
             return redirect(f'/{pk}')
+
+
+class CategoryCreateView(APIView):
+    permission_classes = [IsTeacher,]
+    @swagger_auto_schema(request_body=Category)
+    def post(self, request):
+        user = request.user
+
+        data = request.data.copy()
+        data['user'] = user.id
+
+
+        serializer = Category(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+

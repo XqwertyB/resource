@@ -1,4 +1,5 @@
 import requests
+from Tools.scripts.cleanfuture import recurse
 from django.contrib.auth import authenticate
 from django.contrib.auth.hashers import make_password
 from rest_framework import serializers
@@ -7,53 +8,82 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from users.models import User
 from . import models
-from .models import  ReviewRecourse
+from .models import ReviewRecourse, Files, Videos, Recourse, Category
 
 
 class Category(serializers.ModelSerializer):
     class Meta:
-        model = models.Category
+        model = Category
         fields = ['id', 'name']
+        read_only_fields = ['id', ]
 
-class Sub_CatSerializers(serializers.ModelSerializer):
-    sub_category = Category()
-    class Meta:
-        model = models.Sub_Category
-        fields = [ 'id', 'name', 'sub_category']
 
 
 class FileSerializers(serializers.ModelSerializer):
     class Meta:
         model = models.Files
         fields = ['id', 'name', 'file']
+        read_only_fields = ['id', ]
+
 
 class VideoSerializers(serializers.ModelSerializer):
     class Meta:
         model = models.Videos
         fields = ['id', 'name', 'video_file']
+        read_only_fields = ['id', ]
+
 
 class UserRecSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.User
         fields = ['first_name']
 
-class RecSerializers(serializers.ModelSerializer):
-    sub_category = Sub_CatSerializers()
-    file = FileSerializers()
-    video = VideoSerializers()
+
+class RecSerializer(serializers.ModelSerializer):
+    file = FileSerializers(write_only=True)
+    video = VideoSerializers(write_only=True)
 
     class Meta:
-        model = models.Recourse
-        fields = ['id', 'sub_category', 'file', 'video', 'typ', 'info', 'user', ]
+        model = Recourse
+        fields = ['category', 'typ', 'info', 'file', 'video']
+
+    def create(self, validated_data):
+        # Extract file and video data
+        file_data = validated_data.pop('file', None)
+        video_data = validated_data.pop('video', None)
+
+        user = self.context.get('req_user')
+
+        # Save file instance if data exists
+        if file_data:
+            try:
+                Files.objects.create(user=user, **file_data)
+            except Exception as e:
+                raise serializers.ValidationError({"file": f"Error creating file: {str(e)}"})
+
+        # Save video instance if data exists
+        if video_data:
+            try:
+                Videos.objects.create(user=user, **video_data)
+            except Exception as e:
+                raise serializers.ValidationError({"video": f"Error creating video: {str(e)}"})
+
+        # Save the Recourse instance
+        recourse = Recourse.objects.create(user=user, **validated_data)
+        return recourse
+
 
 
 class ReviewRecourseSerializer(serializers.ModelSerializer):
     class Meta:
         model = ReviewRecourse
-        fields = ['id', 'rating', 'comment', 'user']
+        fields = ['id',  'comment', 'user']
 
-class ResSerializers(serializers.ModelSerializer):
+
+class ResViewSerializers(serializers.ModelSerializer):
     reviews = ReviewRecourseSerializer(many=True, read_only=True, source='reviewrecourse_set')
+    files = FileSerializers()
+    videos = VideoSerializers()
     class Meta:
         model = models.Recourse
         fields = ['id', 'category', 'files', 'videos', 'typ', 'info', 'reviews']
@@ -87,7 +117,6 @@ class LoginSerializer(serializers.Serializer):
 
             token = self.verify_student_password(login, password)
             if token:
-
                 jwt_tokens = self.create_jwt_token(login)
                 return {
                     "message": "Login successful.",
@@ -157,8 +186,10 @@ class LoginSerializer(serializers.Serializer):
         except User.DoesNotExist:
             raise ValidationError("User not found.")
 
+
+
 class ReviewRecourseSerializer(serializers.ModelSerializer):
     class Meta:
         model = ReviewRecourse
-        fields = ['id', 'recourse', 'user', 'text', 'rating', 'created_at']
+        fields = ['id', 'recourse', 'user', 'text',  'created_at']
         read_only_fields = ['id', 'user', 'created_at']
