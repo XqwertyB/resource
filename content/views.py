@@ -13,8 +13,8 @@ from yaml import serialize
 
 from users.permission import IsTeacher, IsStudent
 from . import models
-from .models import Recourse, RecViews, ReviewRecourse, Likes
-from .serializers import RecSerializer, ReviewRecourseSerializer, ResViewSerializers, Category
+from .models import Recourse, RecViews, ReviewRecourse, Likes, Category
+from .serializers import RecSerializer, ReviewRecourseSerializer, ResViewSerializers, CategorySerializer
 
 
 class RecCreateView(APIView):
@@ -204,7 +204,7 @@ class DelLike(APIView):
 
 class CategoryCreateView(APIView):
     permission_classes = [IsTeacher,]
-    @swagger_auto_schema(request_body=Category)
+    @swagger_auto_schema(request_body=CategorySerializer)
     def post(self, request):
         user = request.user
 
@@ -212,10 +212,15 @@ class CategoryCreateView(APIView):
         data['user'] = user.id
 
 
-        serializer = Category(data=data)
+        serializer = CategorySerializer(data=data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+class CategoryView(APIView):
+    def get(self, request):
+        queryset = Category.objects.all()
+        serializer = CategorySerializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

@@ -1,7 +1,7 @@
 from django.urls import path
 
 from content.views import RecCreateView, RecView, RecUpDe, ReviewRecourseAPIView, RecUserContent, AddLike, DelLike, \
-    RecDetail, CategoryCreateView
+    RecDetail, CategoryCreateView, CategoryView
 from users.views import (DataImportView, oAuthAuthorizationView, OAuthCallbackView, LoginView, UserDetailView, \
                          )
 
@@ -20,6 +20,7 @@ urlpatterns = [
     path('<str:pk>/add_likes', AddLike.as_view(), name='Like quyish'),
     path('<str:pk>/del_likes', DelLike.as_view(), name= 'Likeni uchirish'),
     path('category/create/', CategoryCreateView.as_view()),
+    path('category/', CategoryView.as_view()),
     path('getme/', UserDetailView.as_view()),
 
 

@@ -10,7 +10,7 @@ from . import models
 from .models import ReviewRecourse, Files, Videos, Recourse, Category
 
 
-class Category(serializers.ModelSerializer):
+class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = ['id', 'name']

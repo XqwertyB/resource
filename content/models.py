@@ -30,12 +30,12 @@ class Category(BaseModel):
 
 
 
-class Sub_Category(BaseModel):
-    name = models.CharField("Sub kategoriya nomi", max_length=200)
-    sub_category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="sub_category")
-
-    def __str__(self):
-        return self.name
+# class Sub_Category(BaseModel):
+#     name = models.CharField("Sub kategoriya nomi", max_length=200)
+#     sub_category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="sub_category")
+#
+#     def __str__(self):
+#         return self.name
 
 
 # class Category(models.Model, BaseModel):
