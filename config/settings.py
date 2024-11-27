@@ -30,7 +30,7 @@ SECRET_KEY = 'django-insecure-4^78^2j*o=oz_lwz^+xv48mh28@upfxxg&yq&j4%ob(iun+h_r
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["api-resource.tsue.uz", "127.0.0.1:8000", "127.0.0.1"]
+ALLOWED_HOSTS = ["api-resource.tsue.uz", "127.0.0.1:8000", "127.0.0.1", 'localhost:3000']
 
 
 # Application definition
@@ -80,6 +80,8 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGIN_REGEXES = [
     "http://127.0.0.1:3000",
     "http://localhost:3000",
+    "http://127.0.0.1:8000",
+    "http://localhost:8000",
 
 ]
 
