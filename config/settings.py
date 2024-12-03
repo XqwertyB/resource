@@ -28,7 +28,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-4^78^2j*o=oz_lwz^+xv48mh28@upfxxg&yq&j4%ob(iun+h_r'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
+
 
 ALLOWED_HOSTS = ["api-resource.tsue.uz", "127.0.0.1:8000", "127.0.0.1", 'localhost:3000']
 
