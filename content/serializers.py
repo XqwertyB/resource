@@ -6,7 +6,6 @@ from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from users.models import User
-from . import models
 from .models import ReviewRecourse, Files, Videos, Recourse, Category
 
 
@@ -16,26 +15,31 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = ['id', 'name']
         read_only_fields = ['id', ]
 
+class UserSerializer(serializers.ModelSerializer):
+    model = User
+    fields = ['first_name', ]
+
+
+class ResourceSerializers(serializers.ModelSerializer):
+    class Meta:
+        model = Recourse
+        fields = ["category", "typ", "info", ]
 
 
 class FileSerializers(serializers.ModelSerializer):
+    recourse = ResourceSerializers(read_only=True)
     class Meta:
-        model = models.Files
-        fields = ['id', 'name', 'file']
-        read_only_fields = ['id', ]
+        model = Files
+        fields = ['id', 'name', 'file', 'recourse', ]
 
 
 class VideoSerializers(serializers.ModelSerializer):
+    recourse = ResourceSerializers(read_only=True)
     class Meta:
-        model = models.Videos
-        fields = ['id', 'name', 'video_file']
+        model = Videos
+        fields = ['id', 'name', 'video_file', 'recourse', ]
         read_only_fields = ['id', ]
 
-
-class UserRecSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = models.User
-        fields = ['first_name']
 
 
 class RecSerializer(serializers.ModelSerializer):
@@ -79,7 +83,7 @@ class ResViewSerializers(serializers.ModelSerializer):
     files = FileSerializers()
     videos = VideoSerializers()
     class Meta:
-        model = models.Recourse
+        model = Recourse
         fields = ['id', 'category', 'files', 'videos', 'typ', 'info', 'reviews']
 
 

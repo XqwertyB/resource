@@ -239,20 +239,22 @@ class RecUserVideo(APIView):
         return Response(response_data, status=status.HTTP_200_OK)
 
 class RecUserFile(APIView):
-    permission_classes = [IsTeacher,]
-    #@swagger_auto_schema(request_body=ReviewRecourseSerializer)
+    permission_classes = [IsTeacher]
+
     def get(self, request, *args, **kwargs):
         user = request.user
         try:
-            UUID(str(user.id))  # Validate UUID
+            UUID(str(user.id))
         except (ValueError, AttributeError):
             return Response({"detail": "Invalid user ID format."}, status=400)
 
+        # Query the files for the user
         obj = Files.objects.filter(user=user)
-        serializes = FileSerializers(obj, many=True)
+        if not obj.exists():
+            return Response({"detail": "No files found for the user."}, status=404)
 
+        # Serialize the queryset without converting to a list
+        serialized = FileSerializers(obj, many=True)
 
-        response_data = {
-            "file": serializes.data,
-        }
-        return Response(response_data, status=status.HTTP_200_OK)
+        return Response(serialized.data, status=status.HTTP_200_OK)
+
