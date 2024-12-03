@@ -47,30 +47,36 @@ class RecSerializer(serializers.ModelSerializer):
         fields = ['category', 'typ', 'info', 'file', 'video']
 
     def create(self, validated_data):
-        # Extract file and video data
+
         file_data = validated_data.pop('file', None)
         video_data = validated_data.pop('video', None)
 
+
         user = self.context.get('req_user')
+        if not user:
+            raise serializers.ValidationError({"user": "User context is missing."})
 
-        # Save file instance if data exists
-        if file_data:
-            try:
-                Files.objects.create(user=user, **file_data)
-            except Exception as e:
-                raise serializers.ValidationError({"file": f"Error creating file: {str(e)}"})
 
-        # Save video instance if data exists
-        if video_data:
-            try:
-                Videos.objects.create(user=user, **video_data)
-            except Exception as e:
-                raise serializers.ValidationError({"video": f"Error creating video: {str(e)}"})
+        try:
+            file_instance = None
+            video_instance = None
 
-        # Save the Recourse instance
-        recourse = Recourse.objects.create(user=user, **validated_data)
-        return recourse
+            if file_data:
+                file_instance = Files.objects.create(user=user, **file_data)
+            if video_data:
+                video_instance = Videos.objects.create(user=user, **video_data)
 
+
+            recourse = Recourse.objects.create(
+                user=user,
+                file=file_instance,
+                video=video_instance,
+                **validated_data
+            )
+            return recourse
+
+        except Exception as e:
+            raise serializers.ValidationError({"detail": f"Error creating Recourse: {str(e)}"})
 
 
 class ReviewRecourseSerializer(serializers.ModelSerializer):

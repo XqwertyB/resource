@@ -4,12 +4,10 @@ from django.shortcuts import get_object_or_404, redirect
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
-from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST
 from rest_framework.views import APIView
-from yaml import serialize
+
 
 from users.permission import IsTeacher, IsStudent
 from . import models
@@ -18,20 +16,17 @@ from .serializers import RecSerializer, ReviewRecourseSerializer, ResViewSeriali
 
 
 class RecCreateView(APIView):
-    permission_classes = [IsTeacher,]
+    permission_classes = [IsTeacher]
 
     @swagger_auto_schema(request_body=RecSerializer)
-    def post(self, request):
-        user = request.user
+    def post(self, request, *args, **kwargs):
+        serializer = RecSerializer(data=request.data, context={'req_user': request.user})
 
-        data = request.data.copy()
-        data['user'] = user.id
-
-
-        serializer = RecSerializer(data=data, context={'req_user': request.user.id})
         if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            recourse = serializer.save()
+            response_data = RecSerializer(recourse).data
+            return Response(response_data, status=status.HTTP_201_CREATED)
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class RecView(APIView):
