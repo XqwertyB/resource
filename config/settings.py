@@ -31,7 +31,7 @@ SECRET_KEY = 'django-insecure-4^78^2j*o=oz_lwz^+xv48mh28@upfxxg&yq&j4%ob(iun+h_r
 DEBUG = True
 
 
-ALLOWED_HOSTS = ["api-resource.tsue.uz", "127.0.0.1:8000", "127.0.0.1", 'localhost:3000']
+ALLOWED_HOSTS = ["api-resource.tsue.uz", "127.0.0.1:8000", "127.0.0.1", 'localhost:3000', "*"]
 
 CSRF_TRUSTED_ORIGINS = [
     'https://api-resource.tsue.uz',

@@ -39,8 +39,8 @@ class UserRecSerializer(serializers.ModelSerializer):
 
 
 class RecSerializer(serializers.ModelSerializer):
-    file = FileSerializers(write_only=True)
-    video = VideoSerializers(write_only=True)
+    file = FileSerializers(write_only=True, required=False)
+    video = VideoSerializers(write_only=True, required=False)
 
     class Meta:
         model = Recourse
@@ -51,32 +51,21 @@ class RecSerializer(serializers.ModelSerializer):
         file_data = validated_data.pop('file', None)
         video_data = validated_data.pop('video', None)
 
-
         user = self.context.get('req_user')
-        if not user:
-            raise serializers.ValidationError({"user": "User context is missing."})
 
 
-        try:
-            file_instance = None
-            video_instance = None
-
-            if file_data:
-                file_instance = Files.objects.create(user=user, **file_data)
-            if video_data:
-                video_instance = Videos.objects.create(user=user, **video_data)
+        recourse = Recourse.objects.create(user=user, **validated_data)
 
 
-            recourse = Recourse.objects.create(
-                user=user,
-                file=file_instance,
-                video=video_instance,
-                **validated_data
-            )
-            return recourse
+        if file_data:
+            Files.objects.create(user=user, recourse=recourse, **file_data)
 
-        except Exception as e:
-            raise serializers.ValidationError({"detail": f"Error creating Recourse: {str(e)}"})
+
+        if video_data:
+            Videos.objects.create(user=user, recourse=recourse, **video_data)
+
+        return recourse
+
 
 
 class ReviewRecourseSerializer(serializers.ModelSerializer):

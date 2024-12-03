@@ -88,6 +88,7 @@ class Files(BaseModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=200)
     file = models.FileField("Fayl", upload_to='files/')
+    recourse = models.ForeignKey('Recourse', on_delete=models.CASCADE, related_name='files', null=True, blank=True)
 
     def __str__(self):
         return self.name
@@ -96,7 +97,8 @@ class Files(BaseModel):
 class Videos(BaseModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=200)
-    video_file = models.FileField("Video Fayl", upload_to="videos/", )
+    video_file = models.FileField("Video Fayl", upload_to="videos/")
+    recourse = models.ForeignKey('Recourse', on_delete=models.CASCADE, related_name='videos', null=True, blank=True)
 
     def __str__(self):
         return self.name

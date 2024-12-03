@@ -19,15 +19,15 @@ class RecCreateView(APIView):
     permission_classes = [IsTeacher]
 
     @swagger_auto_schema(request_body=RecSerializer)
-    def post(self, request, *args, **kwargs):
-        serializer = RecSerializer(data=request.data, context={'req_user': request.user})
-
+    def post(self, request):
+        user = request.user
+        data = request.data.copy()
+        serializer = RecSerializer(data=data, context={'req_user': user})
         if serializer.is_valid():
-            recourse = serializer.save()
-            response_data = RecSerializer(recourse).data
-            return Response(response_data, status=status.HTTP_201_CREATED)
-
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class RecView(APIView):
     permission_classes = [IsTeacher, IsStudent,]
