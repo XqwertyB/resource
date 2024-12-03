@@ -1,7 +1,7 @@
 from django.urls import path
 
 from content.views import RecCreateView, RecView, RecUpDe, ReviewRecourseAPIView, RecUserContent, AddLike, DelLike, \
-    RecDetail, CategoryCreateView, CategoryView
+    RecDetail, CategoryCreateView, CategoryView, RecUserVideo, RecUserFile
 from users.views import (DataImportView, oAuthAuthorizationView, OAuthCallbackView, LoginView, UserDetailView, \
                          )
 
@@ -22,6 +22,8 @@ urlpatterns = [
     path('category/create/', CategoryCreateView.as_view()),
     path('category/', CategoryView.as_view()),
     path('getme/', UserDetailView.as_view()),
+    path('videos/user/', RecUserVideo.as_view()),
+    path('files/user/', RecUserFile.as_view())
 
 
 ]

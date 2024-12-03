@@ -11,8 +11,9 @@ from rest_framework.views import APIView
 
 from users.permission import IsTeacher, IsStudent
 from . import models
-from .models import Recourse, RecViews, ReviewRecourse, Likes, Category
-from .serializers import RecSerializer, ReviewRecourseSerializer, ResViewSerializers, CategorySerializer
+from .models import Recourse, RecViews, ReviewRecourse, Likes, Category, Videos, Files
+from .serializers import RecSerializer, ReviewRecourseSerializer, ResViewSerializers, CategorySerializer, \
+    VideoSerializers, FileSerializers
 
 
 class RecCreateView(APIView):
@@ -87,7 +88,7 @@ class RecDetail(APIView):
             rec.view_count += 1
             rec.save()
 
-            # Записываем, что пользователь просмотрел вакансию
+            # Записываем, что пользователь просмотрел
             RecViews.objects.create(user=user, rec=rec)
 
 
@@ -219,3 +220,39 @@ class CategoryView(APIView):
         queryset = Category.objects.all()
         serializer = CategorySerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+class RecUserVideo(APIView):
+    permission_classes = [IsTeacher,]
+    #@swagger_auto_schema(request_body=ReviewRecourseSerializer)
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        try:
+            UUID(str(user.id))  # Validate UUID
+        except (ValueError, AttributeError):
+            return Response({"detail": "Invalid user ID format."}, status=400)
+
+        obj = Videos.objects.filter(user=user)
+        serializes = VideoSerializers(obj, many=True)
+        response_data = {
+            "video": serializes.data,
+        }
+        return Response(response_data, status=status.HTTP_200_OK)
+
+class RecUserFile(APIView):
+    permission_classes = [IsTeacher,]
+    #@swagger_auto_schema(request_body=ReviewRecourseSerializer)
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        try:
+            UUID(str(user.id))  # Validate UUID
+        except (ValueError, AttributeError):
+            return Response({"detail": "Invalid user ID format."}, status=400)
+
+        obj = Files.objects.filter(user=user)
+        serializes = FileSerializers(obj, many=True)
+
+
+        response_data = {
+            "file": serializes.data,
+        }
+        return Response(response_data, status=status.HTTP_200_OK)
