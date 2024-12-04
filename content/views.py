@@ -182,34 +182,21 @@ def get_client_ip(request):
 
 
 class AddLike(APIView):
-    def get(self, request, pk):
+    def post(self, request, pk):
         ip_client = get_client_ip(request)
         if not ip_client:
             return Response({"error": "Unable to fetch client IP"}, status=400)
 
         try:
-            # Check if the like already exists for the client and resource
-            Likes.objects.get(ip=ip_client, resource_id=pk)
-            # Redirect if the like already exists
-            return redirect(f'/{pk}')
-        except Likes.DoesNotExist:
-            # Create a new like if it doesn't exist
-            Likes.objects.create(ip=ip_client, resource_id=pk)
-            return redirect(f'/{pk}')
-
-class DelLike(APIView):
-    def get(self, request, pk):
-        ip_client = get_client_ip(request)
-        if not ip_client:
-            return Response({"error": "Unable to fetch client IP"}, status=400)
-
-        try:
-            # Find and delete the like for the client and resource
+            # Check if the like already exists
             like = Likes.objects.get(ip=ip_client, resource_id=pk)
+            # If it exists, delete it (unlike)
             like.delete()
+            return Response({"message": "Like removed"}, status=200)
         except Likes.DoesNotExist:
-            pass  # Ignore if the like doesn't exist
-        return redirect(f'/{pk}')
+            # If it does not exist, create a new like
+            Likes.objects.create(ip=ip_client, resource_id=pk)
+            return Response({"message": "Like added"}, status=201)
 
 
 class CategoryCreateView(APIView):
