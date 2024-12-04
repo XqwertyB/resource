@@ -300,7 +300,7 @@ class RecVideoDetail(APIView):
     #@swagger_auto_schema(request_body=ReviewRecourseSerializer)
     def get(self, request, pk):
         obj = Videos.objects.get(pk=pk)
-        serializes = VideoSerializers(obj, many=True)
+        serializes = VideoSerializers(obj)
         response_data = {
             "video": serializes.data,
         }
