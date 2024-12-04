@@ -104,10 +104,10 @@ class Videos(BaseModel):
         return self.name
 
 TYPE = (
-    ("presentation", "Taqdimot"),
-    ("scientific", "Ilmiy ish"),
-    ("diplom", "Diplom ishi"),
-    ("book", "Kitob"),
+    ("Taqdimot", "Taqdimot"),
+    ("Ilmiy ish", "Ilmiy ish"),
+    ("Diplom ishi", "Diplom ishi"),
+    ("Kitob", "Kitob"),
 )
 
 
@@ -132,13 +132,21 @@ class RecViews(models.Model):
         unique_together = ('user', 'rec')
 
 class ReviewRecourse(models.Model):
-    recourse = models.ForeignKey(Recourse, on_delete=models.CASCADE, related_name='reviews')  # Ресурс, к которому относится отзыв
+    recourse = models.ForeignKey(Recourse, on_delete=models.CASCADE, related_name='reviews')
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     text = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)  
     def __str__(self):
-        return f"Review for {self.recourse} by {self.user.username}"
+        return f"Review for {self.recourse} by {self.user.first_name}"
 
 class Likes(models.Model):
     ip = models.CharField('IP', max_length=100)
     resource = models.ForeignKey(Recourse, on_delete=models.CASCADE)
+
+class ReviewVideos(models.Model):
+    video = models.ForeignKey(Videos, on_delete=models.CASCADE, related_name='vid')
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    text = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    def __str__(self):
+        return f"Review for {self.recourse} by {self.user.first_name}"

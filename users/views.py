@@ -229,7 +229,6 @@ class OAuthCallbackView(APIView):
 
             refresh = RefreshToken.for_user(user)
             return Response({
-                'details': user_details,
                 'jwt_token': {
                     'refresh': str(refresh),
                     'access': str(refresh.access_token),

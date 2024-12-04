@@ -11,9 +11,9 @@ from rest_framework.views import APIView
 
 from users.permission import IsTeacher, IsStudent
 from . import models
-from .models import Recourse, RecViews, ReviewRecourse, Likes, Category, Videos, Files
+from .models import Recourse, RecViews, ReviewRecourse, Likes, Category, Videos, Files, ReviewVideos
 from .serializers import RecSerializer, ReviewRecourseSerializer, ResViewSerializers, CategorySerializer, \
-    VideoSerializers, FileSerializers
+    VideoSerializers, FileSerializers, ReviewVideosSerializer
 
 
 class RecCreateView(APIView):
@@ -83,9 +83,8 @@ class RecUpDe(generics.RetrieveUpdateDestroyAPIView):
 
 
 class RecDetail(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated,]
     @swagger_auto_schema(
-        # For GET requests, use query parameters
         manual_parameters=[
             openapi.Parameter(
                 'param_name',
@@ -106,7 +105,6 @@ class RecDetail(APIView):
 
             RecViews.objects.create(user=user, rec=rec)
         serializer = ResViewSerializers(rec)
-        print(serializer.data)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -298,12 +296,47 @@ class RecFile(APIView):
 
 
 class RecVideoDetail(APIView):
-    permission_classes = [IsAuthenticated,]
-    #@swagger_auto_schema(request_body=ReviewRecourseSerializer)
+    permission_classes = [IsAuthenticated]
+
     def get(self, request, pk):
-        obj = Videos.objects.get(pk=pk)
-        serializes = VideoSerializers(obj)
-        response_data = {
-            "video": serializes.data,
-        }
-        return Response(response_data, status=status.HTTP_200_OK)
+        try:
+
+            video = Videos.objects.get(pk=pk)
+            video_serializer = VideoSerializers(video)
+
+
+            reviews = ReviewVideos.objects.filter(video=video)
+            reviews_serializer = ReviewVideosSerializer(reviews, many=True)
+
+
+            response_data = {
+                "video": video_serializer.data,
+                "reviews": reviews_serializer.data,
+            }
+            return Response(response_data, status=status.HTTP_200_OK)
+        except Videos.DoesNotExist:
+            return Response(
+                {"error": "Video not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+class CommentVideo(APIView):
+    permission_classes = [IsAuthenticated]
+    def post(self, request, pk):
+        try:
+
+            video = Videos.objects.get(pk=pk)
+        except Videos.DoesNotExist:
+            return Response(
+                {"error": "Video not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+
+        data = request.data
+        data["video"] = video.id
+        data["user"] = request.user.id
+
+        serializer = ReviewVideosSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

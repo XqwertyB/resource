@@ -6,7 +6,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from users.models import User
-from .models import ReviewRecourse, Files, Videos, Recourse, Category
+from .models import ReviewRecourse, Files, Videos, Recourse, Category, ReviewVideos
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -22,6 +22,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class ResourceSerializers(serializers.ModelSerializer):
+    category = CategorySerializer(read_only=True)
     class Meta:
         model = Recourse
         fields = ["category", "typ", "info", ]
@@ -59,6 +60,7 @@ class CreateVideoSerializer(serializers.ModelSerializer):
 class RecSerializer(serializers.ModelSerializer):
     file = CreateFileSerializer(write_only=True, required=False)
     video = CreateVideoSerializer(write_only=True, required=False)
+    category = CategorySerializer(read_only=True)
 
     class Meta:
         model = Recourse
@@ -118,6 +120,7 @@ class ResViewSerializers(serializers.ModelSerializer):
     reviews = ReviewRecourseSerializer(many=True, read_only=True,)
     files = CreateFileSerializer(many=True, read_only=True)
     videos = CreateVideoSerializer(many=True, read_only=True)
+    category = CategorySerializer(read_only=True)
     class Meta:
         model = Recourse
         fields = ['id', 'category', 'files', 'videos', 'typ', 'info', 'reviews']
@@ -227,3 +230,11 @@ class ReviewRecourseSerializer(serializers.ModelSerializer):
         model = ReviewRecourse
         fields = ['id', 'recourse', 'user', 'text',  'created_at']
         read_only_fields = ['id', 'user', 'created_at']
+
+
+class ReviewVideosSerializer(serializers.ModelSerializer):
+    video = CreateVideoSerializer(many=True, read_only=True)
+    user = UserSerializer(many=True, read_only=True)
+    class Meta:
+        model = ReviewVideos
+        fields = ['video', 'user', 'text' ]
