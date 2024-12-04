@@ -301,17 +301,17 @@ class RecVideoDetail(APIView):
     def get(self, request, pk):
         try:
 
-            vid = Videos.objects.get(pk=pk)
-            video_serializer = VideoSerializers(vid)
-            reviews = ReviewVideos.objects.filter(vid=vid)
+            video = Videos.objects.get(pk=pk)
+            video_serializer = VideoSerializers(video)
+            reviews = ReviewVideos.objects.filter(video=video)
             reviews_serializer = ReviewVideosSerializer(reviews, many=True)
             user = request.user
-            rec_viewed = RecViews.objects.filter(user=user, vid=vid).exists()
+            rec_viewed = RecViews.objects.filter(user=user, video=video).exists()
             if not rec_viewed:
-                vid.view_count += 1
-                vid.save()
+                video.view_count += 1
+                video.save()
 
-                RecViews.objects.create(user=user, vid=vid)
+                RecViews.objects.create(user=user, video=video)
             response_data = {
                 "video": video_serializer.data,
                 "reviews": reviews_serializer.data,

@@ -125,11 +125,11 @@ class Recourse(BaseModel):
 
 class RecViews(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    vid = models.ForeignKey(Videos, on_delete=models.CASCADE)
+    video = models.ForeignKey(Videos, on_delete=models.CASCADE)
     viewed_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-       unique_together = ('user', 'vid')
+       unique_together = ('user', 'video')
 
 class ReviewRecourse(models.Model):
     recourse = models.ForeignKey(Recourse, on_delete=models.CASCADE, related_name='reviews')
