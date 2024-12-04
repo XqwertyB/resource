@@ -149,4 +149,4 @@ class ReviewVideos(models.Model):
     text = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     def __str__(self):
-        return f"Review for {self.recourse} by {self.user.first_name}"
+        return f"Review for {self.video} by {self.user.first_name}"
