@@ -6,6 +6,7 @@ admin.site.register(models.Videos)
 admin.site.register(models.Recourse)
 admin.site.register(models.ReviewRecourse)
 admin.site.register(models.Likes)
+admin.site.register(models.ReviewVideos)
 
 
 
