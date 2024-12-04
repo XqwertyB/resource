@@ -16,8 +16,9 @@ class CategorySerializer(serializers.ModelSerializer):
         read_only_fields = ['id', ]
 
 class UserSerializer(serializers.ModelSerializer):
-    model = User
-    fields = ['first_name', ]
+    class Meta:
+        model = User
+        fields = ['first_name', 'second_name']
 
 
 class ResourceSerializers(serializers.ModelSerializer):
@@ -27,17 +28,19 @@ class ResourceSerializers(serializers.ModelSerializer):
 
 
 class FileSerializers(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
     recourse = ResourceSerializers(read_only=True)
     class Meta:
         model = Files
-        fields = ['id', 'name', 'file', 'recourse', ]
+        fields = ['id', 'name', 'file', 'recourse', 'user' ]
 
 
 class VideoSerializers(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
     recourse = ResourceSerializers(read_only=True)
     class Meta:
         model = Videos
-        fields = ['id', 'name', 'video_file', 'recourse', ]
+        fields = ['id', 'name', 'video_file', 'recourse', 'user' ]
         read_only_fields = ['id', ]
 
 
