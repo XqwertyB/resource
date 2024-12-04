@@ -116,6 +116,7 @@ class Recourse(BaseModel):
     typ = models.CharField("Resurs turi", choices=TYPE, max_length=50)
     info = models.TextField('Malumot')
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    view_count = models.PositiveIntegerField(default=0)
 
     def __str__(self):
         return f"{self.typ} - {self.category.name} "

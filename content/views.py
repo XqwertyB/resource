@@ -4,7 +4,7 @@ from django.shortcuts import get_object_or_404, redirect
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -83,6 +83,7 @@ class RecUpDe(generics.RetrieveUpdateDestroyAPIView):
 
 
 class RecDetail(APIView):
+    permission_classes = [AllowAny]
     @swagger_auto_schema(
         # For GET requests, use query parameters
         manual_parameters=[
@@ -102,7 +103,7 @@ class RecDetail(APIView):
         if not rec_viewed:
             rec.view_count += 1
             rec.save()
-            # Записываем, что пользователь просмотрел
+
             RecViews.objects.create(user=user, rec=rec)
         serializer = ResViewSerializers(rec)
         return Response(serializer.data, status=status.HTTP_200_OK)

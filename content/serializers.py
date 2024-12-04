@@ -115,11 +115,11 @@ class ReviewRecourseSerializer(serializers.ModelSerializer):
 
 class ResViewSerializers(serializers.ModelSerializer):
     reviews = ReviewRecourseSerializer(many=True, read_only=True, source='reviewrecourse_set')
-    files = FileSerializers()
-    videos = VideoSerializers()
+    file = CreateFileSerializer(read_only=True)
+    video = CreateVideoSerializer(read_only=True)
     class Meta:
         model = Recourse
-        fields = ['id', 'category', 'files', 'videos', 'typ', 'info', 'reviews']
+        fields = ['id', 'category', 'file', 'video', 'typ', 'info', 'reviews']
 
 
 class LoginSerializer(serializers.Serializer):
