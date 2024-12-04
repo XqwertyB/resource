@@ -325,22 +325,32 @@ class RecVideoDetail(APIView):
 
 class CommentVideo(APIView):
     permission_classes = [IsAuthenticated]
+
     def post(self, request, pk):
         try:
-
             video = Videos.objects.get(pk=pk)
         except Videos.DoesNotExist:
             return Response(
                 {"error": "Video not found"}, status=status.HTTP_404_NOT_FOUND
             )
 
+        # Collect data for the serializer
+        data = {
+            "text": request.data.get("text"),  # Extract 'text' from request
+            "user": request.user.id,  # Include user ID
+        }
 
-        data = request.data
-        data["video"] = video.id
-        data["user"] = request.user.id
-
+        # Pass the data to the serializer
         serializer = ReviewVideosSerializer(data=data)
+
         if serializer.is_valid():
-            serializer.save()
+            # Save the comment (if your model requires a video, handle it here)
+            ReviewVideos.objects.create(
+                text=serializer.validated_data['text'],
+                user=request.user,
+                video=video
+            )
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
