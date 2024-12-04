@@ -233,8 +233,7 @@ class ReviewRecourseSerializer(serializers.ModelSerializer):
 
 
 class ReviewVideosSerializer(serializers.ModelSerializer):
-    video = CreateVideoSerializer(read_only=True)
     user = UserSerializer(read_only=True)
     class Meta:
         model = ReviewVideos
-        fields = ['video', 'user', 'text' ]
+        fields = ['user', 'text' ]
