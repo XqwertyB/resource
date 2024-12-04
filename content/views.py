@@ -97,25 +97,14 @@ class RecDetail(APIView):
     def get(self, request, pk, ):
 
         rec = get_object_or_404(Recourse, pk=pk)
-
-
         user = request.user
-
-
         rec_viewed = RecViews.objects.filter(user=user, rec=rec).exists()
-
         if not rec_viewed:
-
             rec.view_count += 1
             rec.save()
-
             # Записываем, что пользователь просмотрел
             RecViews.objects.create(user=user, rec=rec)
-
-
         serializer = ResViewSerializers(rec)
-
-
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -272,10 +261,47 @@ class RecUserFile(APIView):
         # Query the files for the user
         obj = Files.objects.filter(user=user)
         if not obj.exists():
-            return Response({"detail": "No files found for the user."}, status=404)
+            return Response({"detail": "No video found for the user."}, status=404)
 
         # Serialize the queryset without converting to a list
         serialized = FileSerializers(obj, many=True)
 
         return Response(serialized.data, status=status.HTTP_200_OK)
 
+
+
+class RecVideo(APIView):
+    permission_classes = [IsAuthenticated,]
+    #@swagger_auto_schema(request_body=ReviewRecourseSerializer)
+    def get(self, request, *args, **kwargs):
+        obj = Videos.objects.all()
+        serializes = VideoSerializers(obj, many=True)
+        response_data = {
+            "video": serializes.data,
+        }
+        return Response(response_data, status=status.HTTP_200_OK)
+
+class RecFile(APIView):
+    permission_classes = [IsAuthenticated,]
+
+    def get(self, request, *args, **kwargs):
+        obj = Files.objects.all()
+        if not obj.exists():
+            return Response({"detail": "No files found."}, status=404)
+
+
+        serialized = FileSerializers(obj, many=True)
+
+        return Response(serialized.data, status=status.HTTP_200_OK)
+
+
+class RecVideoDetail(APIView):
+    permission_classes = [IsAuthenticated,]
+    #@swagger_auto_schema(request_body=ReviewRecourseSerializer)
+    def get(self, request, pk):
+        obj = Videos.objects.get(pk=pk)
+        serializes = VideoSerializers(obj, many=True)
+        response_data = {
+            "video": serializes.data,
+        }
+        return Response(response_data, status=status.HTTP_200_OK)
