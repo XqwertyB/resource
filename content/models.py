@@ -99,6 +99,7 @@ class Videos(BaseModel):
     name = models.CharField(max_length=200)
     video_file = models.FileField("Video Fayl", upload_to="videos/")
     recourse = models.ForeignKey('Recourse', on_delete=models.CASCADE, related_name='videos', null=True, blank=True)
+    view_count = models.PositiveIntegerField(default=0)
 
     def __str__(self):
         return self.name
@@ -116,7 +117,6 @@ class Recourse(BaseModel):
     typ = models.CharField("Resurs turi", choices=TYPE, max_length=50)
     info = models.TextField('Malumot')
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    view_count = models.PositiveIntegerField(default=0)
 
     def __str__(self):
         return f"{self.typ} - {self.category.name} "
@@ -125,11 +125,11 @@ class Recourse(BaseModel):
 
 class RecViews(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    rec = models.ForeignKey(Recourse, on_delete=models.CASCADE)
+    vid = models.ForeignKey(Videos, on_delete=models.CASCADE)
     viewed_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('user', 'rec')
+       unique_together = ('user', 'vid')
 
 class ReviewRecourse(models.Model):
     recourse = models.ForeignKey(Recourse, on_delete=models.CASCADE, related_name='reviews')
@@ -141,7 +141,7 @@ class ReviewRecourse(models.Model):
 
 class Likes(models.Model):
     ip = models.CharField('IP', max_length=100)
-    resource = models.ForeignKey(Recourse, on_delete=models.CASCADE)
+    resource = models.ForeignKey(Videos, on_delete=models.CASCADE)
 
 class ReviewVideos(models.Model):
     video = models.ForeignKey(Videos, on_delete=models.CASCADE, related_name='vid')

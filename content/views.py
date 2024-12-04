@@ -301,14 +301,17 @@ class RecVideoDetail(APIView):
     def get(self, request, pk):
         try:
 
-            video = Videos.objects.get(pk=pk)
-            video_serializer = VideoSerializers(video)
-
-
-            reviews = ReviewVideos.objects.filter(video=video)
+            vid = Videos.objects.get(pk=pk)
+            video_serializer = VideoSerializers(vid)
+            reviews = ReviewVideos.objects.filter(vid=vid)
             reviews_serializer = ReviewVideosSerializer(reviews, many=True)
+            user = request.user
+            rec_viewed = RecViews.objects.filter(user=user, vid=vid).exists()
+            if not rec_viewed:
+                vid.view_count += 1
+                vid.save()
 
-
+                RecViews.objects.create(user=user, vid=vid)
             response_data = {
                 "video": video_serializer.data,
                 "reviews": reviews_serializer.data,
@@ -318,6 +321,7 @@ class RecVideoDetail(APIView):
             return Response(
                 {"error": "Video not found"}, status=status.HTTP_404_NOT_FOUND
             )
+
 
 class CommentVideo(APIView):
     permission_classes = [IsAuthenticated]

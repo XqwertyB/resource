@@ -211,7 +211,7 @@ USE_TZ = True
 
 CLIENT_SECRET = 'AfAbslKI3hYG_BD2e0nTzUAjRmxhUtxijNF3XQ1J'
 CLIENT_ID ='4'
-REDIRECT_URI = 'http://localhost:3000/login'
+REDIRECT_URI = 'http://localhost:3000/'
 AUTHORIZE_URL = 'https://hemis.tsue.uz/oauth/authorize',
 TOKEN_URL = 'https://hemis.tsue.uz/oauth/access-token',
 RESOURCE_OWNER_URL = 'https://hemis.tsue.uz/oauth/api/user?fields='
