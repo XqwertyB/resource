@@ -83,7 +83,7 @@ class RecUpDe(generics.RetrieveUpdateDestroyAPIView):
 
 
 class RecDetail(APIView):
-    permission_classes = [IsAuthenticated,]
+    permission_classes = [AllowAny]
     @swagger_auto_schema(
         # For GET requests, use query parameters
         manual_parameters=[
