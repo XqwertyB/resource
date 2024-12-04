@@ -23,11 +23,32 @@ class RecCreateView(APIView):
     def post(self, request):
         user = request.user
         data = request.data.copy()
+
+        # Обработка файла
+        if 'file' in request.FILES:
+            data['file'] = {
+                'name': data.get('name', 'Unnamed File'),
+                'file': request.FILES['file']
+            }
+
+        # Обработка видео
+        if 'video_file' in request.FILES:
+            data['video'] = {
+                'name': data.get('name', 'Unnamed Video'),
+                'video_file': request.FILES['video_file']
+            }
+
         serializer = RecSerializer(data=data, context={'req_user': user})
+
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+
 
 
 class RecView(APIView):

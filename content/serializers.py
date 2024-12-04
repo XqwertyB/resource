@@ -43,35 +43,67 @@ class VideoSerializers(serializers.ModelSerializer):
         fields = ['id', 'name', 'video_file', 'recourse', 'user' ]
         read_only_fields = ['id', ]
 
+class CreateFileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Files
+        fields = ['id', 'name', 'file']
+        read_only_fields = ['id']
+
+class CreateVideoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Videos
+        fields = ['id', 'name', 'video_file']
+        read_only_fields = ['id']
 
 
 class RecSerializer(serializers.ModelSerializer):
-    file = FileSerializers(write_only=True, required=False)
-    video = VideoSerializers(write_only=True, required=False)
+    file = CreateFileSerializer(write_only=True, required=False)
+    video = CreateVideoSerializer(write_only=True, required=False)
 
     class Meta:
         model = Recourse
         fields = ['category', 'typ', 'info', 'file', 'video']
 
     def create(self, validated_data):
+        print("Validated data:", validated_data)
 
         file_data = validated_data.pop('file', None)
+        print("File data:", file_data)
         video_data = validated_data.pop('video', None)
+        print("Video data:", video_data)
 
         user = self.context.get('req_user')
+        if not user:
+            raise serializers.ValidationError("Пользователь не найден в контексте.")
 
-
+        # Создаем объект Recourse
         recourse = Recourse.objects.create(user=user, **validated_data)
 
+        try:
+            # Сохраняем файл, если данные есть
+            if file_data:
+                Files.objects.create(
+                    user=user,
+                    recourse=recourse,
+                    name=file_data.get('name'),
+                    file=file_data.get('file')
+                )
 
-        if file_data:
-            Files.objects.create(user=user, recourse=recourse, **file_data)
+            # Сохраняем видео, если данные есть
+            if video_data:
+                Videos.objects.create(
+                    user=user,
+                    recourse=recourse,
+                    name=video_data.get('name'),
+                    video_file=video_data.get('video_file')
+                )
 
-
-        if video_data:
-            Videos.objects.create(user=user, recourse=recourse, **video_data)
+        except Exception as e:
+            recourse.delete()  # Удаляем объект, если возникает ошибка
+            raise serializers.ValidationError(f"Ошибка при сохранении файлов или видео: {str(e)}")
 
         return recourse
+
 
 
 
