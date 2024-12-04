@@ -83,7 +83,7 @@ class RecUpDe(generics.RetrieveUpdateDestroyAPIView):
 
 
 class RecDetail(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated,]
     @swagger_auto_schema(
         # For GET requests, use query parameters
         manual_parameters=[
@@ -106,6 +106,7 @@ class RecDetail(APIView):
 
             RecViews.objects.create(user=user, rec=rec)
         serializer = ResViewSerializers(rec)
+        print(serializer.data)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
