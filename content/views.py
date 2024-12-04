@@ -188,24 +188,28 @@ class AddLike(APIView):
             return Response({"error": "Unable to fetch client IP"}, status=400)
 
         try:
+            # Check if the like already exists for the client and resource
             Likes.objects.get(ip=ip_client, resource_id=pk)
+            # Redirect if the like already exists
             return redirect(f'/{pk}')
         except Likes.DoesNotExist:
-            new_like = Likes()
-            new_like.ip = ip_client
-            new_like.resource_id = pk
-            new_like.save()
+            # Create a new like if it doesn't exist
+            Likes.objects.create(ip=ip_client, resource_id=pk)
             return redirect(f'/{pk}')
 
 class DelLike(APIView):
     def get(self, request, pk):
         ip_client = get_client_ip(request)
+        if not ip_client:
+            return Response({"error": "Unable to fetch client IP"}, status=400)
+
         try:
-            lik = Likes.objects.get(ip=ip_client)
-            lik.delete()
-            return redirect(f'/{pk}')
-        except:
-            return redirect(f'/{pk}')
+            # Find and delete the like for the client and resource
+            like = Likes.objects.get(ip=ip_client, resource_id=pk)
+            like.delete()
+        except Likes.DoesNotExist:
+            pass  # Ignore if the like doesn't exist
+        return redirect(f'/{pk}')
 
 
 class CategoryCreateView(APIView):
@@ -300,27 +304,43 @@ class RecVideoDetail(APIView):
 
     def get(self, request, pk):
         try:
-
+            # Fetch the video
             video = Videos.objects.get(pk=pk)
+
+            # Serialize the video
             video_serializer = VideoSerializers(video)
+
+            # Fetch and serialize reviews
             reviews = ReviewVideos.objects.filter(video=video)
             reviews_serializer = ReviewVideosSerializer(reviews, many=True)
+
+            # Count likes for the video
+            like_count = Likes.objects.filter(resource_id=pk).count()
+
+            # Check if the video has been viewed by the user
             user = request.user
             rec_viewed = RecViews.objects.filter(user=user, video=video).exists()
+
             if not rec_viewed:
+                # Increment view count and save
                 video.view_count += 1
                 video.save()
 
+                # Record the view
                 RecViews.objects.create(user=user, video=video)
+
+            # Prepare the response data
             response_data = {
                 "video": video_serializer.data,
                 "reviews": reviews_serializer.data,
+                "like_count": like_count,  # Add the like count here
             }
             return Response(response_data, status=status.HTTP_200_OK)
         except Videos.DoesNotExist:
             return Response(
                 {"error": "Video not found"}, status=status.HTTP_404_NOT_FOUND
             )
+
 
 
 class CommentVideo(APIView):
@@ -354,3 +374,19 @@ class CommentVideo(APIView):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+class CommentVideoDel(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, pk):
+        try:
+            # Find the review to delete by primary key
+            review = ReviewVideos.objects.get(pk=pk, user=request.user)
+        except ReviewVideos.DoesNotExist:
+            return Response(
+                {"error": "Review not found or you don't have permission to delete this comment"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # Delete the review
+        review.delete()
+        return Response({"message": "Comment deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
