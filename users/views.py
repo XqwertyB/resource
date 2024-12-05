@@ -16,11 +16,11 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from config.settings import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI, AUTHORIZE_URL, TOKEN_URL, RESOURCE_OWNER_URL
+
+from config.settings import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI
 from content.serializers import LoginSerializer
 from users.client import oAuth2Client
 from users.models import User, APISettings
-from config import settings
 from users.serializers import GetUserSerializer
 
 logger = logging.getLogger(__name__)
@@ -93,6 +93,7 @@ class DataImportView(View):
 ###########################################################################
 class oAuthAuthorizationView(APIView):
     def get(self, request, *args, **kwargs):
+        print(REDIRECT_URI)
         client = oAuth2Client(
             client_id=CLIENT_ID,
             client_secret=CLIENT_SECRET,

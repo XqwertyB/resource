@@ -14,9 +14,10 @@ from datetime import timedelta
 from pathlib import Path
 
 from django.conf import settings
-from django.conf.global_settings import AUTH_USER_MODEL
-from tutorial.settings import AUTH_PASSWORD_VALIDATORS
+from environs import Env
 
+env = Env()
+env.read_env()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -25,7 +26,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-4^78^2j*o=oz_lwz^+xv48mh28@upfxxg&yq&j4%ob(iun+h_r'
+SECRET_KEY = env.str("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -209,12 +210,10 @@ USE_TZ = True
 
 
 
-CLIENT_SECRET = 'AfAbslKI3hYG_BD2e0nTzUAjRmxhUtxijNF3XQ1J'
-CLIENT_ID ='4'
-REDIRECT_URI = 'https://resource.tsue.uz/'
-AUTHORIZE_URL = 'https://hemis.tsue.uz/oauth/authorize',
-TOKEN_URL = 'https://hemis.tsue.uz/oauth/access-token',
-RESOURCE_OWNER_URL = 'https://hemis.tsue.uz/oauth/api/user?fields='
+CLIENT_SECRET = env.str('CLIENT_SECRET')
+CLIENT_ID = env.str('CLIENT_ID')
+REDIRECT_URI = env.str('REDIRECT_URI')
+
 
 
 STATIC_URL = '/static/'
