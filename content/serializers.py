@@ -58,7 +58,7 @@ class CreateVideoSerializer(serializers.ModelSerializer):
 
 
 class RecSerializer(serializers.Serializer):
-    category = CategorySerializer(read_only=True,)
+    category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all())
     file_data = serializers.FileField(required=False)
     video_data = serializers.FileField(required=False)
 
