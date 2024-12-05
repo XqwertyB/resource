@@ -59,12 +59,15 @@ class CreateVideoSerializer(serializers.ModelSerializer):
 
 class RecSerializer(serializers.Serializer):
     category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all())
-    file_data = serializers.FileField(required=False)
-    video_data = serializers.FileField(required=False)
+    file = serializers.FileField(required=False)
+    video = serializers.FileField(required=False)
+    name = serializers.CharField(required=True, write_only=True)
+    typ = serializers.CharField(required=True)
+    info = serializers.CharField(required=True)
 
     class Meta:
         model = Recourse
-        fields = ['category', 'typ', 'info', 'file_data', 'video_data',]
+        fields = ['category', 'name', 'typ', 'info', 'file', 'video']
 
     def create(self, validated_data):
         user = self.context.get('req_user')
@@ -72,31 +75,33 @@ class RecSerializer(serializers.Serializer):
             raise serializers.ValidationError("User is required in the context.")
 
         # Extract file and video data
-        file_data = validated_data.pop('file_data', None)
-        video_data = validated_data.pop('video_data', None)
+        file = validated_data.pop('file', None)
+        video = validated_data.pop('video', None)
+        name = validated_data.pop('name')  # Remove 'name' from validated_data
 
         # Create the Recourse object
         recourse = Recourse.objects.create(user=user, **validated_data)
 
         # Handle file upload
-        if file_data:
+        if file:
             Files.objects.create(
                 user=user,
                 recourse=recourse,
-                name=file_data.name,
-                file=file_data
+                name=name,
+                file=file
             )
 
         # Handle video upload
-        if video_data:
+        if video:
             Videos.objects.create(
                 user=user,
                 recourse=recourse,
-                name=video_data.name,
-                video_file=video_data
+                name=name,
+                video_file=video
             )
 
         return recourse
+
 
 
 
