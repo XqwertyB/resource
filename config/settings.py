@@ -32,7 +32,7 @@ SECRET_KEY = env.str("SECRET_KEY")
 DEBUG = False
 
 
-ALLOWED_HOSTS = ["api-resource.tsue.uz", "127.0.0.1:8000", "127.0.0.1", 'localhost:3000', "*"]
+ALLOWED_HOSTS = ["api-resource.tsue.uz", "127.0.0.1", 'localhost', 'resource.teacher.tsue.uz', 'resource.tsue.uz']
 
 SITE_ID = 1
 
@@ -75,7 +75,26 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'config.urls'
 
-CORS_ALLOW_ALL_ORIGINS = False
+CSRF_TRUSTED_ORIGINS = [
+    "https://api-resource.tsue.uz",
+    "https://resource.teacher.tsue.uz",
+    "https://resource.tsue.uz",
+    "http://localhost:3030",
+    "http://127.0.0.1:3000",
+]
+
+CORS_ALLOW_ALL_ORIGINS = True
+
+CORS_ORIGIN_ALLOW_ALL = True
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    "http://127.0.0.1:3000",
+    "http://localhost:3000",
+    "https://api-resource.tsue.uz",
+    "https://resource.teacher.tsue.uz",
+    "https://resource.tsue.uz"
+]
 
 
 
