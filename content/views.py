@@ -278,8 +278,7 @@ class RecUserFile(APIView):
 
         # Query the files for the user
         obj = Files.objects.filter(user=user)
-        if not obj.exists():
-            return Response({"detail": "No video found for the user."}, status=404)
+
 
         # Serialize the queryset without converting to a list
         serialized = FileSerializers(obj, many=True)
@@ -305,8 +304,6 @@ class RecFile(APIView):
 
     def get(self, request, *args, **kwargs):
         obj = Files.objects.all()
-        if not obj.exists():
-            return Response({"detail": "No files found."}, status=404)
 
 
         serialized = FileSerializers(obj, many=True)
