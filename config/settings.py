@@ -29,7 +29,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = env.str("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 
 ALLOWED_HOSTS = ["api-resource.tsue.uz", "127.0.0.1", 'localhost', 'resource.teacher.tsue.uz', 'resource.tsue.uz']
@@ -96,7 +96,7 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
     "https://resource.tsue.uz"
 ]
 
-
+FILE_UPLOAD_MAX_MEMORY_SIZE = 600 * 1024 * 1024
 
 TEMPLATES = [
     {
