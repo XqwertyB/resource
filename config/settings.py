@@ -34,7 +34,7 @@ DEBUG = False
 
 ALLOWED_HOSTS = ["api-resource.tsue.uz", "127.0.0.1", 'localhost', 'resource.teacher.tsue.uz', 'resource.tsue.uz']
 
-SITE_ID = 1
+
 
 # Application definition
 

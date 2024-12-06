@@ -1,6 +1,8 @@
 from uuid import UUID
 
 from django.shortcuts import get_object_or_404, redirect
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
@@ -246,6 +248,7 @@ class CategoryView(APIView):
         serializer = CategorySerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+@method_decorator(csrf_exempt, name='dispatch')
 class RecUserVideo(APIView):
     permission_classes = [IsTeacher,]
     #@swagger_auto_schema(request_body=ReviewRecourseSerializer)
@@ -262,7 +265,7 @@ class RecUserVideo(APIView):
             "video": serializes.data,
         }
         return Response(response_data, status=status.HTTP_200_OK)
-
+@method_decorator(csrf_exempt, name='dispatch')
 class RecUserFile(APIView):
     permission_classes = [IsTeacher]
 
@@ -284,7 +287,7 @@ class RecUserFile(APIView):
         return Response(serialized.data, status=status.HTTP_200_OK)
 
 
-
+@method_decorator(csrf_exempt, name='dispatch')
 class RecVideo(APIView):
     permission_classes = [IsAuthenticated,]
     #@swagger_auto_schema(request_body=ReviewRecourseSerializer)
@@ -296,6 +299,7 @@ class RecVideo(APIView):
         }
         return Response(response_data, status=status.HTTP_200_OK)
 
+@method_decorator(csrf_exempt, name='dispatch')
 class RecFile(APIView):
     permission_classes = [IsAuthenticated,]
 
@@ -309,7 +313,7 @@ class RecFile(APIView):
 
         return Response(serialized.data, status=status.HTTP_200_OK)
 
-
+@method_decorator(csrf_exempt, name='dispatch')
 class RecVideoDetail(APIView):
     permission_classes = [IsAuthenticated]
 
