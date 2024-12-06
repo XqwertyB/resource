@@ -34,9 +34,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = ["api-resource.tsue.uz", "127.0.0.1:8000", "127.0.0.1", 'localhost:3000', "*"]
 
-CSRF_TRUSTED_ORIGINS = [
-    'https://api-resource.tsue.uz',
-]
+SITE_ID = 1
 
 # Application definition
 
@@ -79,17 +77,6 @@ ROOT_URLCONF = 'config.urls'
 
 CORS_ALLOW_ALL_ORIGINS = False
 
-CORS_ORIGIN_ALLOW_ALL = True
-CORS_ALLOW_CREDENTIALS = True
-
-CORS_ALLOWED_ORIGIN_REGEXES = [
-    "http://127.0.0.1:3000",
-    "http://localhost:3000",
-    "http://127.0.0.1:8000",
-    "http://localhost:8000",
-    "https://api-resource.tsue.uz",
-
-]
 
 
 TEMPLATES = [
