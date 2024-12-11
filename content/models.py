@@ -25,8 +25,9 @@ class BaseModel(models.Model):
 class Category(BaseModel):
     name = models.CharField("Kategoriya nomi", max_length=200)
 
-    def __str__(self):
-        return self.name
+    class Meta:
+        verbose_name = "Kategoriya"
+        verbose_name_plural = "Kategoriya"
 
 
 
@@ -90,8 +91,10 @@ class Files(BaseModel):
     file = models.FileField("Fayl", upload_to='files/')
     recourse = models.ForeignKey('Recourse', on_delete=models.CASCADE, related_name='files', null=True, blank=True)
 
-    def __str__(self):
-        return self.name
+
+    class Meta:
+        verbose_name = "Fayllar"
+        verbose_name_plural = "Fayllar"
 
 
 class Videos(BaseModel):
@@ -101,8 +104,11 @@ class Videos(BaseModel):
     recourse = models.ForeignKey('Recourse', on_delete=models.CASCADE, related_name='videos', null=True, blank=True)
     view_count = models.PositiveIntegerField(default=0)
 
-    def __str__(self):
-        return self.name
+
+
+    class Meta:
+        verbose_name = "Videolar"
+        verbose_name_plural = "Videolar"
 
 TYPE = (
     ("Taqdimot", "Taqdimot"),
@@ -121,6 +127,9 @@ class Recourse(BaseModel):
     def __str__(self):
         return f"{self.typ} - {self.category.name} "
 
+    class Meta:
+        verbose_name = "Resurslar"
+        verbose_name_plural = "Resurslar"
 
 
 class RecViews(models.Model):
@@ -130,6 +139,8 @@ class RecViews(models.Model):
 
     class Meta:
        unique_together = ('user', 'video')
+       verbose_name = "Kurishlar soni"
+       verbose_name_plural = "Kurishlar soni"
 
 class ReviewRecourse(models.Model):
     recourse = models.ForeignKey(Recourse, on_delete=models.CASCADE, related_name='reviews')
@@ -138,6 +149,9 @@ class ReviewRecourse(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)  
     def __str__(self):
         return f"Review for {self.recourse} by {self.user.first_name}"
+    class Meta:
+        verbose_name = "Izohlar"
+        verbose_name_plural = "Izohlar"
 
 class Likes(models.Model):
     ip = models.CharField('IP', max_length=100)
@@ -150,3 +164,7 @@ class ReviewVideos(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     def __str__(self):
         return f"Review for {self.video} by {self.user.first_name}"
+
+    class Meta:
+        verbose_name = "Videoga izohlar"
+        verbose_name_plural = "Videoga izohlar"

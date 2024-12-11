@@ -7,7 +7,6 @@ from users.views import (DataImportView, oAuthAuthorizationView, OAuthCallbackVi
                          )
 
 urlpatterns = [
-    path('save_teacher/', DataImportView.as_view(), name="O'qtuvchilarni yuklab olish"),
     path('login/', oAuthAuthorizationView.as_view(), name="Login o'qtuvchilar uchun"),
     path('login/student/', LoginView.as_view(), name='login talabalar uchun'),
     path('callback/<str:code>', OAuthCallbackView.as_view()),
