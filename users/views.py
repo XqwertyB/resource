@@ -93,127 +93,122 @@ class DataImportView(View):
 ###########################################################################
 from uuid import uuid4
 
+
 class oAuthAuthorizationView(APIView):
     def get(self, request, *args, **kwargs):
+        # 1. Генерируем state
         state = uuid4().hex
         request.session['oauth_state'] = state
 
-        client = oAuth2Client(
-            client_id=CLIENT_ID,
-            client_secret=CLIENT_SECRET,
-            redirect_uri=REDIRECT_URI,
-            authorize_url='https://hemis.tsue.uz/oauth/authorize',
-        )
-
-        return Response({
-            'authorization_url': client.get_authorization_url(state)
-        })
-
-
-
-# class OAuthCallbackView(APIView):
-#     def get(self, request, *args, **kwargs):
-#         full_info = {}
-#         auth_code = self.kwargs.get('code')
-#         if not auth_code:
-#             return Response(
-#                 {
-#                     'status': False,
-#                     'error': 'Authorization code is missing'
-#                 },
-#                 status=status.HTTP_400_BAD_REQUEST)
-#
-#         client = oAuth2Client(
-#             client_id=CLIENT_ID,
-#             client_secret=CLIENT_SECRET,
-#             redirect_uri=REDIRECT_URI,
-#             authorize_url='https://hemis.tsue.uz/oauth/authorize',
-#             token_url='https://hemis.tsue.uz/oauth/access-token',
-#             resource_owner_url='https://hemis.tsue.uz/oauth/api/user?fields='
-#         )
-#         access_token_response = client.get_access_token(auth_code)
-#
-#         if 'access_token' in access_token_response:
-#             access_token = access_token_response['access_token']
-#             user_details = client.get_user_details(access_token)
-#             full_info['details'] = user_details
-#             full_info['token'] = access_token
-#             return Response(full_info, status=status.HTTP_200_OK)
-#         else:
-#             return Response(
-#                 {
-#                     'status': False,
-#                     'error': 'Failed to obtain access token'
-#                 },
-#                 status=status.HTTP_400_BAD_REQUEST
-#             )
-
-
-class OAuthCallbackView(APIView):
-    def get(self, request, *args, **kwargs):
-        auth_code = self.kwargs.get('code')
-        if not auth_code:
-            return Response({'error': 'Authorization code is missing'}, status=status.HTTP_400_BAD_REQUEST)
-
-        # OAuth client initialization
+        # 2. Инициализируем клиент (БЕЗ state)
         client = oAuth2Client(
             client_id=CLIENT_ID,
             client_secret=CLIENT_SECRET,
             redirect_uri=REDIRECT_URI,
             authorize_url='https://hemis.tsue.uz/oauth/authorize',
             token_url='https://hemis.tsue.uz/oauth/access-token',
-            resource_owner_url='https://hemis.tsue.uz/oauth/api/user?fields='
+            resource_owner_url='https://hemis.tsue.uz/oauth/api/user'
+        )
+
+        # 3. Получаем базовую ссылку
+        base_url = client.get_authorization_url()
+
+        # 4. Вручную добавляем state в конец ссылки
+        # Обычно get_authorization_url возвращает что-то вроде "...?client_id=...&response_type=code"
+        # Поэтому мы безопасно добавляем &state=...
+        authorization_url = f"{base_url}&state={state}"
+
+        return Response({
+            'authorization_url': authorization_url
+        })
+
+
+class OAuthCallbackView(APIView):
+    def get(self, request, *args, **kwargs):
+        # 1. Получаем code и state из query parameters
+        auth_code = request.query_params.get('code')
+        received_state = request.query_params.get('state')
+
+        # 2. Проверяем наличие code
+        if not auth_code:
+            return Response({'error': 'Authorization code is missing'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 3. КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Проверка state для защиты от CSRF
+        expected_state = request.session.pop('oauth_state', None)
+
+        if not received_state or received_state != expected_state:
+            logger.error("State mismatch or missing. CSRF potential.")
+            return Response({'error': 'Invalid state parameter or missing session state'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        # OAuth client initialization (Убрали ?fields=)
+        client = oAuth2Client(
+            client_id=CLIENT_ID,
+            client_secret=CLIENT_SECRET,
+            redirect_uri=REDIRECT_URI,
+            authorize_url='https://hemis.tsue.uz/oauth/authorize',
+            token_url='https://hemis.tsue.uz/oauth/access-token',
+            resource_owner_url='https://hemis.tsue.uz/oauth/api/user'  # Улучшено
         )
 
         try:
+            # Обмен code на токен
             access_token_response = client.get_access_token(auth_code)
-        except Exception as e:
-            logger.error("Error obtaining access token: %s", e)
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            access_token = access_token_response.get('access_token')
 
-        access_token = access_token_response.get('access_token')
-        if not access_token:
-            return Response({'error': 'Failed to obtain access token'}, status=status.HTTP_400_BAD_REQUEST)
+            if not access_token:
+                logger.error("Failed to obtain access token: %s", access_token_response)
+                return Response({'error': 'Failed to obtain access token', 'details': access_token_response},
+                                status=status.HTTP_400_BAD_REQUEST)
 
-        try:
+            # Получение данных пользователя
             user_details = client.get_user_details(access_token)
             logger.debug("User details: %s", user_details)
-        except Exception as e:
-            logger.error("Error fetching user details: %s", e)
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        # Department handling
+        except Exception as e:
+            logger.error("Error during token or user fetch: %s", e)
+            return Response({'error': f"OAuth process failed: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        # 4. Улучшенная обработка данных и уникального ID
+        hemis_unique_id = str(user_details.get('id'))
+        if not hemis_unique_id:
+            return Response({'error': 'Unique user ID (id/uuid) missing from HEMIS data'},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
         departments = user_details.get('departments', [])
         department_name = departments[0].get('department', {}).get('name') if departments else None
 
+        user_type = user_details.get('type')  # e.g., 'teacher'
+
         # Transform data
         transformed_data = {
+            'hemis_id': hemis_unique_id,  # Уникальный ID для поиска
             'first_name': user_details.get('firstname'),
             'second_name': user_details.get('surname'),
             'birth_date': self.convert_birth_date(user_details.get('birth_date')),
-            'phone_number': user_details.get('phone').replace('+', ''),
-            'role': 'teacher',
+            'phone_number': user_details.get('phone', '').replace('+', ''),  # Safe access
+            'role': user_type.lower() if user_type else 'default',  # Используем role из HEMIS
             'employee_id_number': user_details.get('employee_id_number'),
             'department': department_name,
         }
 
         logger.debug("Transformed data: %s", transformed_data)
 
-        # Handle user creation or update
-        phone_number = transformed_data['phone_number']
-        user = User.objects.filter(phone_number=phone_number).first()
-
+        # 5. Handle user creation or update
         try:
-            if user:
-                logger.info("Updating user: %s", user)
-                for key, value in transformed_data.items():
-                    setattr(user, key, value)
-                user.save()
-            else:
-                logger.info("Creating new user with data: %s", transformed_data)
-                user = User.objects.create(**transformed_data)
+            # Ищем по hemis_id
+            user, created = User.objects.update_or_create(
+                hemis_id=transformed_data['hemis_id'],
+                defaults=transformed_data
+            )
 
+            if created:
+                logger.info("Created new user: %s", user)
+                # Установка пароля для соответствия модели (если требуется)
+                # user.set_unusable_password()
+                # user.save()
 
+            # Generate JWT token
             refresh = RefreshToken.for_user(user)
             return Response({
                 'jwt_token': {
@@ -223,12 +218,15 @@ class OAuthCallbackView(APIView):
             }, status=status.HTTP_200_OK)
 
         except Exception as e:
-            logger.error("Error processing user: %s", e)
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            logger.error("Error processing user or generating token: %s", e)
+            # Возвращаем 500, так как ошибка на стороне сервера/БД
+            return Response({'error': f"User processing failed: {str(e)}"},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def convert_birth_date(self, birth_date_str):
+        # ... (метод остается прежним)
         try:
-            return datetime.strptime(birth_date_str, '%d-%m-%Y')
+            return datetime.strptime(birth_date_str, '%d-%m-%Y').date()  # Добавил .date()
         except Exception as e:
             logger.error(f"Invalid birth date: {birth_date_str}. Error: {e}")
             return None
