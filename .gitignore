@@ -8,3 +8,4 @@ migrations
 *.pyc
 __pycache__/
 media/
+media
