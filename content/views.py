@@ -1,11 +1,16 @@
+import os
 from uuid import UUID
 
+from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from drf_yasg import openapi
-from drf_yasg.utils import swagger_auto_schema
+from drf_yasg.utils import swagger_auto_schema, logger
 from rest_framework import generics, status
+from rest_framework.exceptions import ValidationError, PermissionDenied
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -16,6 +21,13 @@ from . import models
 from .models import Recourse, RecViews, ReviewRecourse, Likes, Category, Videos, Files, ReviewVideos
 from .serializers import RecSerializer, ReviewRecourseSerializer, ResViewSerializers, CategorySerializer, \
     VideoSerializers, FileSerializers, ReviewVideosSerializer
+
+
+
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = 'page_size'
+    max_page_size = 100
 
 
 # class RecCreateView(APIView):
@@ -49,89 +61,334 @@ from .serializers import RecSerializer, ReviewRecourseSerializer, ResViewSeriali
 #         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class RecCreateView(APIView):
-    permission_classes = [IsTeacher]
+    permission_classes = [IsAuthenticated, IsTeacher]
+    parser_classes = [MultiPartParser, FormParser]
+
+    # Разрешенные MIME-типы и расширения файлов
+    ALLOWED_FILE_TYPES = {
+        'file': [
+            'application/pdf',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        ],
+        'video': [
+            'video/mp4',
+            'video/avi',
+            'video/mpeg',
+            'video/quicktime'
+        ]
+    }
+
+    MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB
+    MAX_VIDEO_SIZE = 500 * 1024 * 1024  # 500MB
+
+    def validate_file(self, file, file_type):
+        """Валидация загружаемых файлов"""
+
+        # Проверка размера файла
+        if file_type == 'file' and file.size > self.MAX_FILE_SIZE:
+            raise ValidationError(f"Размер файла не должен превышать {self.MAX_FILE_SIZE // (1024 * 1024)}MB")
+
+        if file_type == 'video' and file.size > self.MAX_VIDEO_SIZE:
+            raise ValidationError(f"Размер видео не должен превышать {self.MAX_VIDEO_SIZE // (1024 * 1024)}MB")
+
+        # Проверка MIME-типа
+        if file.content_type not in self.ALLOWED_FILE_TYPES[file_type]:
+            raise ValidationError(f"Недопустимый тип файла. Разрешены: {', '.join(self.ALLOWED_FILE_TYPES[file_type])}")
+
+        # Проверка расширения файла
+        ext = os.path.splitext(file.name)[1].lower()
+        allowed_extensions = {
+            'file': ['.pdf', '.doc', '.docx'],
+            'video': ['.mp4', '.avi', '.mov', '.mpeg']
+        }
+
+        if ext not in allowed_extensions[file_type]:
+            raise ValidationError(
+                f"Недопустимое расширение файла. Разрешены: {', '.join(allowed_extensions[file_type])}")
+
+    def check_contextual_permission(self, user, data):
+        """
+        Проверка контекстных прав доступа
+        Может ли этот учитель создавать записи для указанного курса/группы?
+        """
+        # Пример: проверка, принадлежит ли курс учителю
+        course_id = data.get('course')
+        if course_id:
+            from .models import Course
+            try:
+                course = Course.objects.get(id=course_id)
+                if course.teacher != user:
+                    raise PermissionDenied("У вас нет прав для создания записей в этом курсе")
+            except Course.DoesNotExist:
+                raise ValidationError("Курс не найден")
+
+        # Дополнительные проверки в зависимости от бизнес-логики
+        return True
 
     @swagger_auto_schema(request_body=RecSerializer)
     def post(self, request):
         user = request.user
 
-        # Ensure that files are extracted from request.FILES
-        data = request.data.copy()
+        # Логирование попытки создания записи
+        logger.info(f"User {user.id} attempting to create Rec record")
+
+        # Валидация загружаемых файлов
         files = request.FILES
+        validation_errors = {}
 
         if 'file' in files:
-            data['file'] = files['file']
+            try:
+                self.validate_file(files['file'], 'file')
+            except ValidationError as e:
+                validation_errors['file'] = str(e)
 
         if 'video' in files:
-            data['video'] = files['video']
+            try:
+                self.validate_file(files['video'], 'video')
+            except ValidationError as e:
+                validation_errors['video'] = str(e)
 
+        if validation_errors:
+            return Response(
+                {"errors": validation_errors},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Подготовка данных
+        data = request.data.copy()
+
+        # Проверка контекстных прав доступа
+        try:
+            self.check_contextual_permission(user, data)
+        except (PermissionDenied, ValidationError) as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_403_FORBIDDEN if isinstance(e, PermissionDenied)
+                else status.HTTP_400_BAD_REQUEST
+            )
+
+        # Создание сериализатора с контекстом пользователя
         serializer = RecSerializer(data=data, context={'req_user': user})
 
         if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            try:
+                instance = serializer.save()
+
+                # Логирование успешного создания
+                logger.info(f"User {user.id} successfully created Rec record {instance.id}")
+
+                # Возвращаем только необходимые данные, исключая чувствительную информацию
+                response_data = {
+                    'id': instance.id,
+                    'status': 'created',
+                    'message': 'Запись успешно создана'
+                }
+                return Response(response_data, status=status.HTTP_201_CREATED)
+
+            except Exception as e:
+                # Логирование ошибок базы данных
+                logger.error(f"Error creating Rec record for user {user.id}: {str(e)}")
+                return Response(
+                    {"error": "Ошибка при создании записи"},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-
-
-
 class RecView(APIView):
-    permission_classes = [IsTeacher, IsStudent,]
+    permission_classes = [IsAuthenticated]  # Только аутентифицированные пользователи
+    pagination_class = StandardResultsSetPagination
+
+    def get_permissions(self):
+        """
+        Динамическое назначение разрешений в зависимости от метода
+        """
+        if self.request.method == 'GET':
+            return [IsAuthenticated()]
+        return [IsTeacher()]
 
     @swagger_auto_schema(
-        # For GET requests, use query parameters
         manual_parameters=[
             openapi.Parameter(
-                'param_name',
+                'sub_category',
                 openapi.IN_QUERY,
-                description="Description of the query parameter",
+                description="Filter by subcategory name",
                 type=openapi.TYPE_STRING,
             ),
-        ]
+            openapi.Parameter(
+                'typ',
+                openapi.IN_QUERY,
+                description="Filter by type",
+                type=openapi.TYPE_STRING,
+            ),
+            openapi.Parameter(
+                'page',
+                openapi.IN_QUERY,
+                description="Page number",
+                type=openapi.TYPE_INTEGER,
+            ),
+            openapi.Parameter(
+                'page_size',
+                openapi.IN_QUERY,
+                description="Number of results per page",
+                type=openapi.TYPE_INTEGER,
+            )
+        ],
+        responses={
+            200: ResViewSerializers(many=True),
+            403: 'Forbidden - insufficient permissions'
+        }
     )
     def get(self, request, *args, **kwargs):
+        user = request.user
         sub_category_name = request.query_params.get('sub_category')
         typ = request.query_params.get('typ')
-        queryset = Recourse.objects.all()
+
+        # Базовый queryset с учетом прав доступа
+        if hasattr(user, 'teacher_profile'):
+            # Учителя видят все записи или только свои в зависимости от политики
+            queryset = Recourse.objects.all()
+        elif hasattr(user, 'student_profile'):
+            # Студенты видят только опубликованные записи или записи своих курсов
+            queryset = Recourse.objects.filter(
+                Q(is_published=True) |
+                Q(course__student_courses__student=user.student_profile)
+            ).distinct()
+        else:
+            return Response(
+                {"error": "Недостаточно прав для просмотра записей"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Применение фильтров
         if sub_category_name:
             queryset = queryset.filter(sub_category__name__iexact=sub_category_name)
         if typ:
-            queryset=queryset.filter(typ=typ)
+            queryset = queryset.filter(typ=typ)
+
+        # Пагинация
+        paginator = self.pagination_class()
+        page = paginator.paginate_queryset(queryset, request, view=self)
+
+        if page is not None:
+            serializer = ResViewSerializers(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
+
         serializer = ResViewSerializers(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+
 class RecUpDe(generics.RetrieveUpdateDestroyAPIView):
-    queryset = models.Recourse.objects.all()
     serializer_class = RecSerializer
-    permission_classes = [IsTeacher,]
+    permission_classes = [IsTeacher]
+
+    def get_queryset(self):
+        """
+        Ограничиваем queryset только записями, к которым пользователь имеет права
+        """
+        user = self.request.user
+        if hasattr(user, 'teacher_profile'):
+            # Учитель может работать только со своими записями
+            return Recourse.objects.filter(created_by=user.teacher_profile)
+        return Recourse.objects.none()
+
+    def perform_update(self, serializer):
+        """Дополнительная валидация при обновлении"""
+        instance = self.get_object()
+        user = self.request.user
+
+        # Проверка, что пользователь является владельцем
+        if instance.created_by != user.teacher_profile:
+            raise PermissionDenied("Вы можете изменять только свои записи")
+
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        """Дополнительная валидация при удалении"""
+        user = self.request.user
+
+        if instance.created_by != user.teacher_profile:
+            raise PermissionDenied("Вы можете удалять только свои записи")
+
+        # Логирование удаления
+        logger.warning(f"User {user.id} deleting Recourse {instance.id}")
+        instance.delete()
 
 
 class RecDetail(APIView):
-    permission_classes = [IsAuthenticated,]
+    permission_classes = [IsAuthenticated]
+
     @swagger_auto_schema(
-        manual_parameters=[
-            openapi.Parameter(
-                'param_name',
-                openapi.IN_QUERY,
-                description="Description of the query parameter",
-                type=openapi.TYPE_STRING,
-            ),
-        ]
+        responses={
+            200: ResViewSerializers,
+            403: 'Forbidden - no access to this resource',
+            404: 'Resource not found'
+        }
     )
-    def get(self, request, pk, ):
-
-        rec = get_object_or_404(Recourse, pk=pk)
+    def get(self, request, pk):
         user = request.user
-        rec_viewed = RecViews.objects.filter(user=user, rec=rec).exists()
-        if not rec_viewed:
-            rec.view_count += 1
-            rec.save()
 
-            RecViews.objects.create(user=user, rec=rec)
+        try:
+            # Получаем запись с проверкой прав доступа
+            rec = self.get_authorized_recourse(pk, user)
+        except Recourse.DoesNotExist:
+            return Response(
+                {"error": "Ресурс не найден или у вас нет прав доступа"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except PermissionDenied:
+            return Response(
+                {"error": "У вас нет прав для просмотра этого ресурса"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Обновление счетчика просмотров
+        self.handle_view_tracking(user, rec)
+
         serializer = ResViewSerializers(rec)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def get_authorized_recourse(self, pk, user):
+        """
+        Получение записи с проверкой прав доступа
+        """
+        rec = get_object_or_404(Recourse, pk=pk)
+
+        # Проверка прав доступа
+        if hasattr(user, 'teacher_profile'):
+            # Учителя видят все записи или только связанные с ними
+            if rec.created_by != user.teacher_profile and not rec.is_published:
+                raise PermissionDenied()
+        elif hasattr(user, 'student_profile'):
+            # Студенты видят только опубликованные записи или записи своих курсов
+            if not rec.is_published and not self.is_student_in_course(user, rec):
+                raise PermissionDenied()
+        else:
+            raise PermissionDenied()
+
+        return rec
+
+    def is_student_in_course(self, user, rec):
+        """
+        Проверка, принадлежит ли студент к курсу записи
+        """
+        if rec.course:
+            return rec.course.student_courses.filter(student=user.student_profile).exists()
+        return False
+
+    def handle_view_tracking(self, user, rec):
+        """
+        Обработка отслеживания просмотров
+        """
+        rec_viewed = RecViews.objects.filter(user=user, rec=rec).exists()
+        if not rec_viewed:
+            # Атомарное обновление счетчика
+            from django.db.models import F
+            Recourse.objects.filter(pk=rec.pk).update(view_count=F('view_count') + 1)
+
+            RecViews.objects.create(user=user, rec=rec)
 
 
 class ReviewRecourseAPIView(APIView):

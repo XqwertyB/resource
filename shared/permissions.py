@@ -1,9 +1,7 @@
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.permissions import BasePermission
 
-from employee.models import Employee
-from students.models import Student
-from user.models import User
+from users.models import User
 
 
 class IsStudent(BasePermission):

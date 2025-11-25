@@ -32,7 +32,7 @@ schema_view = get_schema_view(
       license=openapi.License(name="Behruz"),
    ),
    public=True,
-   permission_classes=(permissions.AllowAny,),
+   permission_classes=(permissions.IsAdminUser,),
 
 )
 
@@ -40,10 +40,15 @@ schema_view = get_schema_view(
 urlpatterns = [
     re_path(r'^static/(?P<path>.*)$', serve, {'document_root': settings.STATIC_ROOT}),
     re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
-    path('swagger<format>/', schema_view.without_ui(cache_timeout=0), name='schema-json'),
-    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
-    path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
     path('admin/', admin.site.urls),
     path('api/v1/', include('users.urls')),
     path('api/v1/', include('shared.urls'))
 ]
+
+if settings.DEBUG:  # 👈 Swagger доступен только разработчикам
+    urlpatterns += [
+        path('swagger/', schema_view.with_ui('swagger', cache_timeout=0)),
+        re_path(r'^swagger(?P<format>\.json|\.yaml)$',
+            schema_view.without_ui(cache_timeout=0)),
+        path('redoc/', schema_view.with_ui('redoc', cache_timeout=0)),
+    ]

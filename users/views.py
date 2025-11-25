@@ -84,47 +84,31 @@ def get_and_save_all_pages():
 
 class DataImportView(View):
     def get(self, request):
-        result = get_and_save_all_pages()
-        if 'error' in result:
-            return JsonResponse(result, status=result.get('status_code', 500))
-        return JsonResponse(result)
+        import_users_from_tsue.delay()
+        return JsonResponse({"status": "Import started"})
 
 
 # Ensure to import your OAuth2Client correctly
 
 ###########################################################################
+from uuid import uuid4
+
 class oAuthAuthorizationView(APIView):
     def get(self, request, *args, **kwargs):
-        print(REDIRECT_URI)
+        state = uuid4().hex
+        request.session['oauth_state'] = state
+
         client = oAuth2Client(
             client_id=CLIENT_ID,
             client_secret=CLIENT_SECRET,
             redirect_uri=REDIRECT_URI,
             authorize_url='https://hemis.tsue.uz/oauth/authorize',
-            token_url='https://hemis.tsue.uz/oauth/access-token',
-            resource_owner_url='https://hemis.tsue.uz/oauth/api/user?fields='
         )
-        authorization_url = client.get_authorization_url()
 
-        return Response(
-            {
-                'authorization_url': authorization_url
-            },
-            status=status.HTTP_200_OK)
+        return Response({
+            'authorization_url': client.get_authorization_url(state)
+        })
 
-
-    def post(self, request, *args, **kwargs):
-        # Метод для получения токенов (access и refresh)
-        return Response(self.token(), status=status.HTTP_200_OK)
-
-    def token(self):
-        # Пример генерации токена через RefreshToken
-        refresh = RefreshToken.for_user(self.request.user)
-
-        return {
-            "access": str(refresh.access_token),
-            "refresh_token": str(refresh)
-        }
 
 
 # class OAuthCallbackView(APIView):
