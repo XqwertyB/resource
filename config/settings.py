@@ -32,7 +32,7 @@ SECRET_KEY = env.str("SECRET_KEY")
 DEBUG = True
 
 
-ALLOWED_HOSTS = ["api-resource.tsue.uz", "127.0.0.1", 'localhost', 'resource.teacher.tsue.uz', 'resource.tsue.uz']
+ALLOWED_HOSTS = ["api-resource.nsuz.uz", "127.0.0.1", 'localhost', 'resource.teacher.nsuz.uz', 'resource.nsuz.uz']
 
 
 
