@@ -21,71 +21,12 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 
 from config.settings import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI
 from content.serializers import LoginSerializer
-from users.client import oAuth2Client
+from users.client import OAuth2Client
 from users.models import User, APISettings
 from users.serializers import GetUserSerializer
 
 logger = logging.getLogger(__name__)
 
-def get_and_save_all_pages():
-    # Base URL and token for the API
-    base_url = 'https://talaba.tsue.uz/rest/v1/data/employee-list?type=all'
-    token = 'GcQKn9GP6mJcPCHwsArNFWEIObe2CfZF'
-
-    headers = {
-        'Authorization': f'Bearer {token}',
-        'Content-Type': 'application/json',
-    }
-
-    page = 1
-    saved_count = 0
-    start_time = time.time()
-
-    while True:
-        response = requests.get(f"{base_url}?page={page}", headers=headers)
-        if response.status_code == 200:
-            data = response.json()
-            for item in data['data']['items']:
-                if not User.objects.filter(employee_id_number=item['employee_id_number']).exists():
-                    birth_date_value = item.get('birth_date')
-                    if isinstance(birth_date_value, str):
-                        try:
-                            # Try to parse the string as an ISO date
-                            birth_date = date.fromisoformat(birth_date_value)
-                        except ValueError:
-                            # If the string is not a valid date, set birth_date to None
-                            birth_date = None
-                    else:
-                        # If birth_date_value is not a string, set birth_date to None
-                        birth_date = None
-                    User.objects.create(
-                        employee_id_number=item['employee_id_number'],
-                        first_name=item['first_name'],
-                        second_name=item['second_name'],
-                        gender=item['gender']['name'],
-                        employeeType=item['employeeType']['name'],
-                        birth_date=birth_date,
-                        role='teacher'
-                    )
-                    saved_count += 1
-
-            # Check for the next page
-            if page >= data['data']['pagination']['pageCount']:
-                break
-            page += 1
-            time.sleep(1)
-        else:
-            return {'error': 'Error fetching data', 'status_code': response.status_code}
-
-    total_duration = time.time() - start_time
-
-    return {'status': 'data saved', 'saved_items': saved_count, 'total_time': f'{total_duration:.2f} seconds'}
-
-
-class DataImportView(View):
-    def get(self, request):
-        import_users_from_tsue.delay()
-        return JsonResponse({"status": "Import started"})
 
 
 # Ensure to import your OAuth2Client correctly
@@ -101,7 +42,7 @@ class oAuthAuthorizationView(APIView):
         request.session['oauth_state'] = state
 
         # 2. Инициализируем клиент (БЕЗ state)
-        client = oAuth2Client(
+        client = OAuth2Client(
             client_id=CLIENT_ID,
             client_secret=CLIENT_SECRET,
             redirect_uri=REDIRECT_URI,
@@ -110,13 +51,7 @@ class oAuthAuthorizationView(APIView):
             resource_owner_url='https://hemis.tsue.uz/oauth/api/user'
         )
 
-        # 3. Получаем базовую ссылку
-        base_url = client.get_authorization_url()
-
-        # 4. Вручную добавляем state в конец ссылки
-        # Обычно get_authorization_url возвращает что-то вроде "...?client_id=...&response_type=code"
-        # Поэтому мы безопасно добавляем &state=...
-        authorization_url = f"{base_url}&state={state}"
+        authorization_url = client.get_authorization_url(state=state)
 
         return Response({
             'authorization_url': authorization_url
@@ -142,7 +77,7 @@ class OAuthCallbackView(APIView):
                             status=status.HTTP_400_BAD_REQUEST)
 
         # OAuth client initialization (Убрали ?fields=)
-        client = oAuth2Client(
+        client = OAuth2Client(
             client_id=CLIENT_ID,
             client_secret=CLIENT_SECRET,
             redirect_uri=REDIRECT_URI,

@@ -133,23 +133,23 @@ REST_FRAMEWORK = {
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-#DATABASES = {
-#    'default': {
-##        'ENGINE': 'django.db.backends.sqlite3',
-#        'NAME': BASE_DIR / 'db.sqlite3',
-#    }
-#}
-
 DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql_psycopg2',
-            'NAME': env.str("DB_NAME"),
-            'USER': env.str("DB_USER"),
-            'PASSWORD': env.str("DB_PASS"),
-            'HOST': env.str("DB_HOST"),
-            'PORT': env.str("DB_PORT")
-        }
-    }
+   'default': {
+       'ENGINE': 'django.db.backends.sqlite3',
+       'NAME': BASE_DIR / 'db.sqlite3',
+   }
+}
+
+# DATABASES = {
+#         'default': {
+#             'ENGINE': 'django.db.backends.postgresql_psycopg2',
+#             'NAME': env.str("DB_NAME"),
+#             'USER': env.str("DB_USER"),
+#             'PASSWORD': env.str("DB_PASS"),
+#             'HOST': env.str("DB_HOST"),
+#             'PORT': env.str("DB_PORT")
+#         }
+#     }
 
 
 SIMPLE_JWT = {
@@ -256,3 +256,10 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+STUDENT_CLIENT_SECRET = env.str("STUDENT_CLIENT_SECRET")
+STUDENT_CLIENT_ID = env.str("STUDENT_CLIENT_ID")
+STUDENT_REDIRECT_URI = env.str("STUDENT_REDIRECT_URI")
+STUDENT_AUTHORIZE_URL = env.str("STUDENT_AUTHORIZE_URL")
+STUDENT_TOKEN_URL = env.str("STUDENT_TOKEN_URL")
+STUDENT_RESOURCE_OWNER_URL = env.str("STUDENT_RESOURCE_OWNER_URL")

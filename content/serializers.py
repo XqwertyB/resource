@@ -140,12 +140,14 @@ class LoginSerializer(serializers.Serializer):
         user = authenticate(**authentication_kwargs)
 
         if user:
-
-            self.user = user
+            refresh = RefreshToken.for_user(user)
             return {
                 "message": "Login successful.",
-                "jwt_tokens": self.user.token(),
-                "role": self.user.role.lower()
+                "jwt_tokens": {
+                    "access": str(refresh.access_token),
+                    "refresh": str(refresh),
+                },
+                "role": user.role.lower()
             }
         else:
 

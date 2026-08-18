@@ -3,13 +3,23 @@ from django.urls import path
 from content.views import RecCreateView, RecView, RecUpDe, ReviewRecourseAPIView, RecUserContent, AddLike, \
     RecDetail, CategoryCreateView, CategoryView, RecUserVideo, RecUserFile, RecVideo, RecFile, RecVideoDetail, \
     CommentVideo, CommentVideoDel
-from users.views import (DataImportView, oAuthAuthorizationView, OAuthCallbackView, LoginView, UserDetailView, \
-                         )
+from users.oAuth2 import (
+    StudentAuthorizationView,
+    StudentCallbackView,
+    TeacherAuthorizationView,
+    TeacherCallbackView,
+)
+from users.views import LoginView, UserDetailView
 
 urlpatterns = [
-    path('login/', oAuthAuthorizationView.as_view(), name="Login o'qtuvchilar uchun"),
-    path('login/student/', LoginView.as_view(), name='login talabalar uchun'),
-    path('callback/<str:code>', OAuthCallbackView.as_view()),
+    path('login/', TeacherAuthorizationView.as_view(), name='teacher-oauth-authorize'),
+    path('login/student/', StudentAuthorizationView.as_view(), name='student-oauth-login'),
+    path('callback/', TeacherCallbackView.as_view(), name='teacher-oauth-callback'),
+    path('login/student/password/', LoginView.as_view(), name='student-password-login'),
+    path('oauth/teacher/authorize/', TeacherAuthorizationView.as_view(), name='teacher-oauth-authorize-v2'),
+    path('oauth/teacher/callback/', TeacherCallbackView.as_view(), name='teacher-oauth-callback-v2'),
+    path('oauth/student/authorize/', StudentAuthorizationView.as_view(), name='student-oauth-authorize'),
+    path('oauth/student/callback/', StudentCallbackView.as_view(), name='student-oauth-callback'),
     path('resourceuser/', RecUserContent.as_view(), name="Userga tegishli resurslar" ),
     path('recourse-create/', RecCreateView.as_view(), name="resurs yaratish"),
     path('recourse/', RecView.as_view(), name="barcha resurslar"),

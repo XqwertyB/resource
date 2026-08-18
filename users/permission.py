@@ -9,4 +9,4 @@ class IsTeacher(BasePermission):
 class IsStudent(BasePermission):
     def has_permission(self, request, view):
         user = request.user
-        return bool(user.is_authenticated and user.role in ['student', ])
+        return bool(user.is_authenticated and user.role in ['student', 'talaba'])

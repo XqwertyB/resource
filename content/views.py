@@ -1,12 +1,12 @@
 import os
+import logging
 from uuid import UUID
 
-from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from drf_yasg import openapi
-from drf_yasg.utils import swagger_auto_schema, logger
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError, PermissionDenied
 from rest_framework.pagination import PageNumberPagination
@@ -22,6 +22,7 @@ from .models import Recourse, RecViews, ReviewRecourse, Likes, Category, Videos,
 from .serializers import RecSerializer, ReviewRecourseSerializer, ResViewSerializers, CategorySerializer, \
     VideoSerializers, FileSerializers, ReviewVideosSerializer
 
+logger = logging.getLogger(__name__)
 
 
 class StandardResultsSetPagination(PageNumberPagination):
@@ -108,22 +109,7 @@ class RecCreateView(APIView):
                 f"Недопустимое расширение файла. Разрешены: {', '.join(allowed_extensions[file_type])}")
 
     def check_contextual_permission(self, user, data):
-        """
-        Проверка контекстных прав доступа
-        Может ли этот учитель создавать записи для указанного курса/группы?
-        """
-        # Пример: проверка, принадлежит ли курс учителю
-        course_id = data.get('course')
-        if course_id:
-            from .models import Course
-            try:
-                course = Course.objects.get(id=course_id)
-                if course.teacher != user:
-                    raise PermissionDenied("У вас нет прав для создания записей в этом курсе")
-            except Course.DoesNotExist:
-                raise ValidationError("Курс не найден")
-
-        # Дополнительные проверки в зависимости от бизнес-логики
+        """The current Recourse schema has no course/group relation."""
         return True
 
     @swagger_auto_schema(request_body=RecSerializer)
@@ -212,7 +198,7 @@ class RecView(APIView):
     @swagger_auto_schema(
         manual_parameters=[
             openapi.Parameter(
-                'sub_category',
+                'category',
                 openapi.IN_QUERY,
                 description="Filter by subcategory name",
                 type=openapi.TYPE_STRING,
@@ -243,28 +229,19 @@ class RecView(APIView):
     )
     def get(self, request, *args, **kwargs):
         user = request.user
-        sub_category_name = request.query_params.get('sub_category')
+        category_name = request.query_params.get('category')
         typ = request.query_params.get('typ')
 
-        # Базовый queryset с учетом прав доступа
-        if hasattr(user, 'teacher_profile'):
-            # Учителя видят все записи или только свои в зависимости от политики
-            queryset = Recourse.objects.all()
-        elif hasattr(user, 'student_profile'):
-            # Студенты видят только опубликованные записи или записи своих курсов
-            queryset = Recourse.objects.filter(
-                Q(is_published=True) |
-                Q(course__student_courses__student=user.student_profile)
-            ).distinct()
-        else:
+        if user.role not in {'teacher', 'talaba', 'student', 'admin', 'moderator'}:
             return Response(
                 {"error": "Недостаточно прав для просмотра записей"},
                 status=status.HTTP_403_FORBIDDEN
             )
+        queryset = Recourse.objects.all()
 
         # Применение фильтров
-        if sub_category_name:
-            queryset = queryset.filter(sub_category__name__iexact=sub_category_name)
+        if category_name:
+            queryset = queryset.filter(category__name__iexact=category_name)
         if typ:
             queryset = queryset.filter(typ=typ)
 
@@ -289,10 +266,7 @@ class RecUpDe(generics.RetrieveUpdateDestroyAPIView):
         Ограничиваем queryset только записями, к которым пользователь имеет права
         """
         user = self.request.user
-        if hasattr(user, 'teacher_profile'):
-            # Учитель может работать только со своими записями
-            return Recourse.objects.filter(created_by=user.teacher_profile)
-        return Recourse.objects.none()
+        return Recourse.objects.filter(user=user)
 
     def perform_update(self, serializer):
         """Дополнительная валидация при обновлении"""
@@ -300,7 +274,7 @@ class RecUpDe(generics.RetrieveUpdateDestroyAPIView):
         user = self.request.user
 
         # Проверка, что пользователь является владельцем
-        if instance.created_by != user.teacher_profile:
+        if instance.user != user:
             raise PermissionDenied("Вы можете изменять только свои записи")
 
         serializer.save()
@@ -309,7 +283,7 @@ class RecUpDe(generics.RetrieveUpdateDestroyAPIView):
         """Дополнительная валидация при удалении"""
         user = self.request.user
 
-        if instance.created_by != user.teacher_profile:
+        if instance.user != user:
             raise PermissionDenied("Вы можете удалять только свои записи")
 
         # Логирование удаления
@@ -356,39 +330,14 @@ class RecDetail(APIView):
         """
         rec = get_object_or_404(Recourse, pk=pk)
 
-        # Проверка прав доступа
-        if hasattr(user, 'teacher_profile'):
-            # Учителя видят все записи или только связанные с ними
-            if rec.created_by != user.teacher_profile and not rec.is_published:
-                raise PermissionDenied()
-        elif hasattr(user, 'student_profile'):
-            # Студенты видят только опубликованные записи или записи своих курсов
-            if not rec.is_published and not self.is_student_in_course(user, rec):
-                raise PermissionDenied()
-        else:
+        if user.role not in {'teacher', 'talaba', 'student', 'admin', 'moderator'}:
             raise PermissionDenied()
 
         return rec
 
-    def is_student_in_course(self, user, rec):
-        """
-        Проверка, принадлежит ли студент к курсу записи
-        """
-        if rec.course:
-            return rec.course.student_courses.filter(student=user.student_profile).exists()
-        return False
-
     def handle_view_tracking(self, user, rec):
-        """
-        Обработка отслеживания просмотров
-        """
-        rec_viewed = RecViews.objects.filter(user=user, rec=rec).exists()
-        if not rec_viewed:
-            # Атомарное обновление счетчика
-            from django.db.models import F
-            Recourse.objects.filter(pk=rec.pk).update(view_count=F('view_count') + 1)
-
-            RecViews.objects.create(user=user, rec=rec)
+        # The current schema tracks views only for Videos, not for Recourse.
+        return None
 
 
 class ReviewRecourseAPIView(APIView):

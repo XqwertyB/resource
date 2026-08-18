@@ -1,4 +1,6 @@
 import requests
+from pathlib import Path
+from django.conf import settings
 from django.utils import timezone
 from rest_framework import status, generics
 from rest_framework.response import Response
@@ -23,10 +25,12 @@ class GetIpAddressAPIView(APIView):
 
 class VideoStream(APIView):
     def get(self, request):
-        video_path = 'media/video_content/Oqtuvchi profili2024-08-20 17-54-11-483.mp4'
+        video_path = Path(settings.MEDIA_ROOT) / 'video_content' / 'Oqtuvchi profili2024-08-20 17-54-11-483.mp4'
+        if not video_path.is_file():
+            return Response({"error": "Video not found"}, status=status.HTTP_404_NOT_FOUND)
 
         def stream_video():
-            with open(video_path, 'rb') as video_file:
+            with video_path.open('rb') as video_file:
                 while True:
                     chunk = video_file.read(10240)
                     if not chunk:
