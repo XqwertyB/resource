@@ -28,9 +28,9 @@ TEACHER_OAUTH = {
     "client_id": CLIENT_ID,
     "client_secret": CLIENT_SECRET,
     "redirect_uri": REDIRECT_URI,
-    "authorize_url": "https://hemis.tsue.uz/oauth/authorize",
-    "token_url": "https://hemis.tsue.uz/oauth/access-token",
-    "resource_owner_url": "https://hemis.tsue.uz/oauth/api/user",
+    "authorize_url": "https://hemis.nspi.uz/oauth/authorize",
+    "token_url": "https://hemis.nspi.uz/oauth/access-token",
+    "resource_owner_url": "https://hemis.nspi.uz/oauth/api/user",
 }
 STUDENT_OAUTH = {
     "client_id": STUDENT_CLIENT_ID,
