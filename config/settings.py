@@ -77,8 +77,11 @@ ROOT_URLCONF = 'config.urls'
 
 CSRF_TRUSTED_ORIGINS = [
     "https://api-resource.tsue.uz",
+    "https://api-resource.nsuz.uz",
     "https://resource.teacher.tsue.uz",
+    "https://resource.teacher.nsuz.uz",
     "https://resource.tsue.uz",
+    "https://resource.nsuz.uz",
     "http://localhost:3030",
     "http://127.0.0.1:3000",
 ]
@@ -92,7 +95,9 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
     "http://127.0.0.1:3000",
     "http://localhost:3000",
     "https://api-resource.tsue.uz",
+    "https://api-resource.nsuz.uz",
     "https://resource.teacher.tsue.uz",
+    "https://resource.teacher.nsuz.uz",
     "https://resource.tsue.uz"
 ]
 
