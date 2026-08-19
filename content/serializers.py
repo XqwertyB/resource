@@ -106,7 +106,7 @@ class RecSerializer(serializers.Serializer):
 
 
 
-class ReviewRecourseSerializer(serializers.ModelSerializer):
+class ReviewRecourseSummarySerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     class Meta:
         model = ReviewRecourse
@@ -114,7 +114,7 @@ class ReviewRecourseSerializer(serializers.ModelSerializer):
 
 
 class ResViewSerializers(serializers.ModelSerializer):
-    reviews = ReviewRecourseSerializer(many=True, read_only=True,)
+    reviews = ReviewRecourseSummarySerializer(many=True, read_only=True)
     files = CreateFileSerializer(many=True, read_only=True)
     videos = CreateVideoSerializer(many=True, read_only=True)
     category = CategorySerializer(read_only=True)
