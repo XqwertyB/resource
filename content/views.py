@@ -265,6 +265,10 @@ class RecUpDe(generics.RetrieveUpdateDestroyAPIView):
         """
         Ограничиваем queryset только записями, к которым пользователь имеет права
         """
+        if getattr(self, 'swagger_fake_view', False):
+            # Вызывается drf-yasg при генерации схемы, где request.user = AnonymousUser
+            return Recourse.objects.none()
+
         user = self.request.user
         return Recourse.objects.filter(user=user)
 

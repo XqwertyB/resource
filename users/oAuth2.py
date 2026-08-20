@@ -3,6 +3,7 @@
 from datetime import datetime
 from uuid import uuid4
 
+from django.core.signing import BadSignature, SignatureExpired, TimestampSigner
 from django.db import IntegrityError
 from rest_framework import status
 from rest_framework.response import Response
@@ -98,11 +99,11 @@ class HemisOAuthMixin:
 
 
 class HemisAuthorizationView(HemisOAuthMixin, APIView):
-    """Create an authorization URL and retain CSRF state in the session."""
+    """Create an authorization URL with a signed, session-independent CSRF state."""
 
     def get(self, request):
-        state = uuid4().hex
-        request.session[f"oauth_state_{self.account_role}"] = state
+        signer = TimestampSigner(salt=f"oauth_state_{self.account_role}")
+        state = signer.sign(uuid4().hex)
         return Response(
             {"data": {"authorization_url": self.get_client().get_authorization_url(state=state)}}
         )
@@ -111,13 +112,21 @@ class HemisAuthorizationView(HemisOAuthMixin, APIView):
 class HemisCallbackView(HemisOAuthMixin, APIView):
     """Exchange a HEMIS code, synchronize the user, and issue local JWTs."""
 
+    # Сколько времени даём пользователю на прохождение логина на стороне HEMIS.
+    STATE_MAX_AGE = 600  # секунд
+
     def get(self, request):
         code = request.query_params.get("code")
         received_state = request.query_params.get("state")
-        expected_state = request.session.pop(f"oauth_state_{self.account_role}", None)
         if not code:
             return Response({"message": "Authorization code is missing."}, status=status.HTTP_400_BAD_REQUEST)
-        if not expected_state or received_state != expected_state:
+
+        signer = TimestampSigner(salt=f"oauth_state_{self.account_role}")
+        if not received_state:
+            return Response({"message": "Invalid OAuth state."}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            signer.unsign(received_state, max_age=self.STATE_MAX_AGE)
+        except (BadSignature, SignatureExpired):
             return Response({"message": "Invalid OAuth state."}, status=status.HTTP_400_BAD_REQUEST)
 
         token_response = self.get_client().get_access_token(code)
